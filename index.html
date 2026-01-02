@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>陪玩服務測試</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: "Micirosoft JhengHei", sans-serif; padding: 20px; text-align: center; background-color: #f5f5f5; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .btn { background-color: #06c755; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; width: 100%; margin-top: 10px; cursor: pointer; }
+        .btn:disabled { background-color: #ccc; }
+        #status { color: red; font-size: 12px; }
+        img { border-radius: 50%; width: 80px; height: 80px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h2>陪玩平台功能測試</h2>
+    
+    <div class="card" id="profileCard">
+        <p>正在讀取使用者資料...</p>
+    </div>
+
+    <div class="card">
+        <h3>📍 GPS 定位測試</h3>
+        <p id="geoMsg">等待操作...</p>
+        <button class="btn" onclick="getLocation()">回報目前位置</button>
+    </div>
+
+    <div class="card">
+        <h3>📸 結單掃碼測試</h3>
+        <p id="scanMsg">請點擊下方按鈕開啟相機</p>
+        <button class="btn" id="scanBtn" onclick="scanCode()">開啟掃描器</button>
+    </div>
+
+    <p id="errorMsg" style="color:red;"></p>
+
+    <script>
+        // 你的 LIFF ID
+        const LIFF_ID = "2008808827-DzeTt84n";
+
+        async function main() {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                
+                // 取得使用者資料
+                const profile = await liff.getProfile();
+                document.getElementById("profileCard").innerHTML = `
+                    <img src="${profile.pictureUrl}" alt="user">
+                    <h3>你好，${profile.displayName}</h3>
+                    <p>身份驗證成功 ✅</p>
+                `;
+
+                // 檢查是否是在 LINE App 內開啟 (掃碼功能只能在 LINE App 內用)
+                if (!liff.isInClient()) {
+                    document.getElementById("scanBtn").disabled = true;
+                    document.getElementById("scanMsg").innerText = "掃碼功能僅限手機版 LINE 使用";
+                }
+
+            } catch (err) {
+                document.getElementById("errorMsg").innerText = "初始化失敗: " + err.message;
+            }
+        }
+
+        // 測試 GPS
+        function getLocation() {
+            if (!navigator.geolocation) {
+                document.getElementById("geoMsg").innerText = "你的裝置不支援 GPS";
+                return;
+            }
+            document.getElementById("geoMsg").innerText = "定位中...";
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    document.getElementById("geoMsg").innerHTML = `定位成功！<br>緯度: ${lat}<br>經度: ${lng}`;
+                    // 這裡未來會接上：傳送資料給伺服器
+                },
+                (error) => {
+                    document.getElementById("geoMsg").innerText = "定位失敗，請確認手機已授權 GPS";
+                }
+            );
+        }
+
+        // 測試掃碼
+        async function scanCode() {
+            try {
+                const result = await liff.scanCodeV2(); // 呼叫掃描器
+                document.getElementById("scanMsg").innerText = "掃描結果: " + result.value;
+            } catch (err) {
+                document.getElementById("scanMsg").innerText = "掃描失敗: " + err.message;
+                alert("請確認你在 LIFF 設定中有開啟 Scan QR 選項！");
+            }
+        }
+
+        main();
+    </script>
+</body>
+</html>
