@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>為人母 - 尋找陪玩員</title>
+    <title>為人母 - 預約服務</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         /* 基礎設定 */
@@ -11,26 +11,21 @@
         .header { background-color: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
         .header h1 { margin: 0; font-size: 20px; color: #333; }
         .header p { margin: 5px 0 0; color: #666; font-size: 14px; }
-        .tags-bar { padding: 15px 20px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
-        .tag { display: inline-block; padding: 6px 15px; background: white; border-radius: 20px; margin-right: 10px; font-size: 14px; color: #666; border: 1px solid #ddd; }
-        .tag.active { background-color: #06c755; color: white; border-color: #06c755; }
-        .container { padding: 0 15px; }
-        .card { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
-        .card-img { width: 100%; height: 200px; object-fit: cover; background-color: #eee; }
+        .container { padding: 15px; }
+        
+        /* 卡片樣式 */
+        .card { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .card-img { width: 100%; height: 200px; object-fit: cover; }
         .card-body { padding: 15px; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
         .name { font-size: 18px; font-weight: bold; color: #333; }
-        .rating { color: #ffc107; font-size: 14px; }
-        .desc { color: #666; font-size: 14px; margin-bottom: 10px; line-height: 1.4; }
-        .badges { margin-bottom: 15px; }
-        .badge { display: inline-block; font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 3px 8px; border-radius: 4px; margin-right: 5px; }
-        .price-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 10px; }
-        .price { font-size: 18px; font-weight: bold; color: #06c755; }
-        .price small { font-size: 12px; color: #999; font-weight: normal; }
-        .btn-book { background-color: #06c755; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; }
-        .btn-book:active { background-color: #05a546; }
-        .btn-book:disabled { background-color: #ccc; cursor: not-allowed; }
-        #loading { text-align: center; padding: 50px; color: #999; }
+        .price { font-size: 18px; font-weight: bold; color: #06c755; float: right; }
+        .btn-book { background-color: #06c755; color: white; border: none; padding: 10px 20px; border-radius: 20px; width: 100%; margin-top: 10px; font-size: 16px; font-weight: bold; }
+        
+        /* 成功後的 QR Code 區塊 */
+        #success-view { display: none; text-align: center; padding-top: 30px; }
+        .qr-box { background: white; padding: 20px; border-radius: 10px; display: inline-block; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .qr-desc { color: #666; margin-top: 15px; line-height: 1.6; }
+        .big-check { font-size: 50px; color: #06c755; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -40,110 +35,93 @@
         <p>為您媒合最專業的陪玩夥伴</p>
     </div>
 
-    <div class="tags-bar">
-        <span class="tag active">全部</span>
-        <span class="tag">台北市</span>
-        <span class="tag">新北市</span>
-        <span class="tag">急件預約</span>
+    <div class="container" id="list-view">
+        <p id="loading">載入中...</p>
     </div>
 
-    <div id="loading">載入資料中...</div>
-    <div class="container" id="card-list"></div>
+    <div class="container" id="success-view">
+        <div class="big-check">✅</div>
+        <h2>預約成功！</h2>
+        <p class="qr-desc">
+            請截圖保存此畫面。<br>
+            當陪玩服務結束時，<br>
+            <b>請出示此 QR Code 給陪玩員掃描。</b>
+        </p>
+        
+        <div class="qr-box">
+            <img id="qr-img" src="" width="200" height="200">
+        </div>
+
+        <button class="btn-book" onclick="location.reload()" style="background-color:#666; margin-top:30px;">
+            返回首頁
+        </button>
+    </div>
 
     <script>
-        // 設定區
         const LIFF_ID = "2008808827-DzeTt84n"; 
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfs3NTl9VmGiqcZZ_bXjwOFvOJsyCeKWiYSuAGC3Q9BNYxk1fmxktF-LkNAzvP94Zk/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbwfs3NTl9VmGiqcZZ_bXjwOFvOJsyCeKWiYSuAGC3Q9BNYxk1fmxktF-LkNAzvP94Zk/exec";
 
-        // 資料區
         const companions = [
-            { id: 1, name: "小美姐姐", img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80", rating: 4.9, reviews: 120, desc: "幼教系畢業，擅長繪本導讀與創意手作，喜歡跟孩子互動！", tags: ["#繪本導讀", "#手作DIY"], price: 350 },
-            { id: 2, name: "Jason 哥哥", img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=600&q=80", rating: 4.8, reviews: 85, desc: "體育系大學生，精力充沛，最適合帶孩子去公園放電、打球。", tags: ["#戶外運動", "#球類教學"], price: 400 },
-            { id: 3, name: "愛麗絲", img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=600&q=80", rating: 5.0, reviews: 42, desc: "雙語家庭長大，可以全英文陪玩，讓孩子在遊戲中自然開口說英文。", tags: ["#全美語", "#鋼琴陪練"], price: 500 }
+            { id: 1, name: "小美姐姐", price: 350, img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80" },
+            { id: 2, name: "Jason 哥哥", price: 400, img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=600&q=80" },
+            { id: 3, name: "愛麗絲", price: 500, img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=600&q=80" }
         ];
 
         let userProfile = null;
 
         async function main() {
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                    return;
-                }
-                userProfile = await liff.getProfile(); // 取得用戶資料
-                renderList();
-            } catch (err) {
-                document.getElementById("loading").innerText = "初始化失敗: " + err.message;
-            }
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            userProfile = await liff.getProfile();
+            renderList();
         }
 
         function renderList() {
-            const container = document.getElementById("card-list");
+            const listDiv = document.getElementById("list-view");
             document.getElementById("loading").style.display = "none";
-
+            
             companions.forEach(item => {
                 const card = document.createElement("div");
                 card.className = "card";
                 card.innerHTML = `
-                    <img src="${item.img}" class="card-img" alt="${item.name}">
+                    <img src="${item.img}" class="card-img">
                     <div class="card-body">
-                        <div class="card-header">
-                            <span class="name">${item.name}</span>
-                            <span class="rating">⭐ ${item.rating} (${item.reviews})</span>
-                        </div>
-                        <p class="desc">${item.desc}</p>
-                        <div class="badges">${item.tags.map(tag => `<span class="badge">${tag}</span>`).join('')}</div>
-                        <div class="price-row">
-                            <span class="price">$${item.price} <small>/小時</small></span>
-                            <button class="btn-book" onclick="handleBook('${item.name}', ${item.price}, this)">立即預約</button>
-                        </div>
+                        <span class="name">${item.name}</span>
+                        <span class="price">$${item.price}</span>
+                        <br><br>
+                        <button class="btn-book" onclick="book('${item.name}', ${item.price})">立即預約</button>
                     </div>
                 `;
-                container.appendChild(card);
+                listDiv.appendChild(card);
             });
         }
 
-        // 處理預約邏輯
-        function handleBook(companionName, price, btn) {
-            if (!confirm(`確定要預約 ${companionName} 嗎？\n預計金額：$${price}`)) return;
+        function book(name, price) {
+            if(!confirm(`確定預約 ${name} 嗎？`)) return;
 
-            // 1. UI 變更：按鈕變色防止重複按
-            const originalText = btn.innerText;
-            btn.innerText = "預約中...";
-            btn.disabled = true;
+            // 1. 隱藏列表，顯示載入中
+            document.getElementById("list-view").style.display = "none";
+            
+            // 2. 送資料到 Google Sheet
+            const data = { userName: userProfile.displayName, companion: name, price: price };
+            fetch(API_URL, {
+                method: "POST", body: JSON.stringify(data), headers: { "Content-Type": "text/plain" }
+            }); // 不等待回應，直接顯示成功，優化體驗
 
-            // 2. 準備資料
-            const data = {
-                userName: userProfile.displayName, // 家長名字
-                companion: companionName,          // 陪玩員名字
-                price: price                       // 金額
-            };
+            // 3. 產生結案代碼 (這裡簡單用 時間+名字 當密碼)
+            const code = "ORDER-" + Date.now().toString().slice(-4); 
+            
+            // 4. 顯示成功畫面 + QR Code
+            showSuccess(code);
+        }
 
-            // 3. 傳送給 Google Sheets
-            // 使用 no-cors 模式避免瀏覽器擋下來，雖然拿不到回應文字，但資料會送出
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify(data),
-                headers: { "Content-Type": "text/plain" }
-            }).then(() => {
-                alert("✅ 預約成功！我們已收到您的訂單。");
-                
-                // 4. (選用) 讓使用者在聊天室也送出一句話
-                liff.sendMessages([{
-                    type: 'text',
-                    text: `您好，我想要預約 ${companionName}，請確認。`
-                }]).then(() => {
-                    liff.closeWindow(); // 關閉視窗回到聊天室
-                }).catch(() => {
-                    liff.closeWindow(); // 就算訊息發送失敗也關閉視窗
-                });
-
-            }).catch(err => {
-                alert("❌ 發生錯誤：" + err);
-                btn.innerText = originalText;
-                btn.disabled = false;
-            });
+        function showSuccess(code) {
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${code}`;
+            document.getElementById("qr-img").src = qrUrl;
+            document.getElementById("success-view").style.display = "block";
+            
+            // 發送訊息
+            liff.sendMessages([{ type: 'text', text: `✅ 我已預約成功！\n結案代碼：${code}` }]);
         }
 
         main();
