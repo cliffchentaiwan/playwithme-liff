@@ -99,4 +99,98 @@
             try {
                 // 加上 action 參數確保讀取正確
                 const res = await fetch(SCRIPT_URL + "?action=getWorkers"); 
-                const workers = await
+                const workers = await res.json();
+                
+                const container = document.getElementById("list-container");
+                document.getElementById("loading").style.display = "none";
+                container.innerHTML = ""; 
+
+                if (!workers || workers.length === 0) {
+                    container.innerHTML = "<p style='text-align:center;color:#999;margin-top:50px;'>目前沒有人上線<br>(請確認陪玩員狀態為 Online)</p>";
+                    return;
+                }
+
+                workers.forEach(w => {
+                    const card = document.createElement("div");
+                    card.className = "card";
+                    
+                    // 防呆處理
+                    let finalImg = w.photo || w.img; 
+                    if (!finalImg || !finalImg.startsWith("http")) {
+                        finalImg = "https://via.placeholder.com/150/CCCCCC/FFFFFF?text=No+Image";
+                    }
+                    let finalPrice = w.rate || w.price || 0;
+                    const priceDisplay = (finalPrice > 0) ? `$${finalPrice} <small>/hr</small>` : "價格洽談中";
+
+                    card.innerHTML = `
+                        <img src="${finalImg}" class="card-img">
+                        <div class="card-body">
+                            <div>
+                                <div class="name">${w.name}</div>
+                                <div class="tags">${w.tags || "#無標籤"}</div>
+                                <div style="font-size:12px; color:#666; margin-top:5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${w.intro || "暫無介紹"}</div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span class="price">${priceDisplay}</span>
+                                <button class="btn-book" onclick="openBooking('${w.name}', ${finalPrice})">預約</button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById("loading").innerText = "讀取資料失敗";
+            }
+        }
+
+        // 2. 打開預約彈窗
+        function openBooking(name, price) {
+            selectedWorker = name;
+            selectedPrice = price;
+            document.getElementById("modal-title").innerText = `預約 ${name}`;
+            document.getElementById("booking-modal").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("booking-modal").style.display = "none";
+        }
+
+        // 3. 送出預約 (含孩童資料)
+        async function submitBooking() {
+            const childInfo = document.getElementById("child-info").value;
+            const note = document.getElementById("booking-note").value;
+            
+            if (!childInfo) { alert("請填寫孩童暱稱與年齡喔！"); return; }
+
+            const btn = document.querySelector(".btn-submit");
+            const originalText = btn.innerText;
+            btn.innerText = "處理中...";
+            btn.disabled = true;
+
+            const data = { 
+                action: "book", 
+                userName: userProfile.displayName, 
+                companion: selectedWorker, 
+                price: selectedPrice,
+                childInfo: childInfo,
+                note: note
+            };
+
+            try {
+                await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
+                alert("✅ 預約申請已送出！\n請等待陪玩員確認。");
+                closeModal();
+            } catch (err) {
+                alert("發生錯誤：" + err);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        main();
+    </script>
+</body>
+</html>
