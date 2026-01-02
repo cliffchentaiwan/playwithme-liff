@@ -1,138 +1,147 @@
-<style>
-        /* ... 保留原有樣式 ... */
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>陪玩夥伴後台</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; padding-bottom: 80px; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .header { display: flex; align-items: center; margin-bottom: 20px; }
+        .avatar { width: 60px; height: 60px; border-radius: 50%; margin-right: 15px; object-fit: cover; border: 2px solid #eee; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .badge-gray { background: #eee; color: #666; }
+        .badge-green { background: #e8f5e9; color: #06c755; }
+        .badge-orange { background: #fff3e0; color: #ef6c00; }
         
+        label { display: block; font-weight: bold; margin: 15px 0 5px; font-size: 14px; color: #555; }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; background: #fafafa; font-size: 15px; }
+        
+        /* Checklist */
+        .checklist-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
+        .check-status { display: flex; align-items: center; }
+        .check-icon { margin-right: 10px; font-size: 18px; color: #ddd; width: 24px; text-align: center;}
+        .check-icon.done { color: #06c755; }
+        .btn-upload { background: #06c755; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .uploaded-link { color: #06c755; text-decoration: none; font-size: 13px; margin-right: 10px; }
+
+        /* 排程 */
+        .time-slot { background: #e3f2fd; color: #1565c0; padding: 10px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
+        .btn-del { color: #d32f2f; font-weight: bold; cursor: pointer; padding: 5px; }
+
         /* 底部導覽列 */
-        .tab-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #eee; display: flex; padding-bottom: 20px; }
+        .tab-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #eee; display: flex; padding-bottom: 20px; z-index: 100; }
         .tab-item { flex: 1; text-align: center; padding: 10px; color: #999; cursor: pointer; font-size: 12px; }
         .tab-item.active-tab { color: #06c755; font-weight: bold; }
         .tab-icon { font-size: 20px; display: block; margin-bottom: 2px; }
 
-        /* 訂單卡片樣式 (參考 PDF) */
+        /* 訂單卡片 */
         .order-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #ccc; }
-        .order-card.pending { border-left-color: #ff9800; } /* 待確認為橘色 */
-        .order-card.accepted { border-left-color: #06c755; } /* 已接單為綠色 */
+        .order-card.pending { border-left-color: #ff9800; } 
+        .order-card.accepted { border-left-color: #06c755; }
         .order-header { display: flex; justify-content: space-between; font-size: 14px; color: #666; margin-bottom: 10px; }
-        .child-info { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
-        .note-text { background: #f9f9f9; padding: 8px; font-size: 13px; color: #555; border-radius: 5px; margin: 10px 0; }
-        .btn-group { display: flex; gap: 10px; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
         .btn-accept { flex: 1; background: #06c755; color: white; border: none; padding: 8px; border-radius: 5px; font-weight: bold; }
         .btn-reject { flex: 1; background: #ff5252; color: white; border: none; padding: 8px; border-radius: 5px; font-weight: bold; }
-    </style>
+        .btn-main { width: 100%; padding: 14px; background-color: #06c755; color: white; border: none; border-radius: 30px; font-size: 16px; font-weight: bold; margin-top: 20px; cursor: pointer; }
 
-<div id="loading" class="page active">...</div>
+        .page { display: none; }
+        .active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="loading" class="page active" style="text-align:center; padding-top: 50px;">
+        <p>🔄 讀取中...</p>
+    </div>
 
     <div id="tab-profile" class="page">
+        <h2 style="margin-left: 5px;">個人檔案</h2>
+        
+        <div class="card">
+            <div class="header">
+                <img id="form-avatar" class="avatar" src="">
+                <div style="flex:1">
+                    <h3 id="form-name" style="margin:0 0 5px 0;"></h3>
+                    <span id="form-status" class="badge badge-gray">未驗證</span>
+                </div>
+            </div>
+            <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-top:10px;">
+                <label style="margin-top:0">目前狀態</label>
+                <select id="inp-online-status" style="background:white;">
+                    <option value="Offline">🔴 休息中 (隱藏)</option>
+                    <option value="Online">🟢 開放接單 (上線)</option>
+                </select>
+            </div>
         </div>
+
+        <div class="card">
+            <h3>🛡️ 信任驗證</h3>
+            <div class="checklist-item"><div class="check-status"><span class="check-icon done">✔</span><span>手機綁定</span></div></div>
+            
+            <div class="checklist-item">
+                <div class="check-status"><span class="check-icon" id="icon-front">●</span><span>身分證正面</span></div>
+                <div><a id="link-front" href="#" target="_blank" class="uploaded-link" style="display:none">查看</a><button class="btn-upload" onclick="triggerUpload('front')">上傳</button></div>
+            </div>
+            <div class="checklist-item">
+                <div class="check-status"><span class="check-icon" id="icon-back">●</span><span>身分證反面</span></div>
+                <div><a id="link-back" href="#" target="_blank" class="uploaded-link" style="display:none">查看</a><button class="btn-upload" onclick="triggerUpload('back')">上傳</button></div>
+            </div>
+            <div class="checklist-item">
+                <div class="check-status"><span class="check-icon" id="icon-police">●</span><span>良民證</span></div>
+                <div><a id="link-police" href="#" target="_blank" class="uploaded-link" style="display:none">查看</a><button class="btn-upload" onclick="triggerUpload('police')">上傳</button></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📝 資料設定</h3>
+            <label>時薪 (NT$)</label><input type="number" id="inp-rate" placeholder="350">
+            <label>專長標籤</label><input type="text" id="inp-tags" placeholder="#畫畫 #鋼琴">
+            <label>自我介紹</label><textarea id="inp-intro" rows="3"></textarea>
+            <label>銀行帳號</label><input type="text" id="inp-bank">
+        </div>
+
+        <div class="card">
+            <h3>📅 可預約時段</h3>
+            <div id="schedule-list" style="margin-bottom:15px;"></div>
+            <div style="display:flex; gap:10px;">
+                <select id="sel-day" style="flex:1"><option value="週一">週一</option><option value="週二">週二</option><option value="週三">週三</option><option value="週四">週四</option><option value="週五">週五</option><option value="週六">週六</option><option value="週日">週日</option></select>
+                <select id="sel-time" style="flex:1"><option value="上午 (09-12)">上午</option><option value="下午 (13-17)">下午</option><option value="晚上 (18-21)">晚上</option></select>
+            </div>
+            <button onclick="addSlot()" style="width:100%; margin-top:10px; background:#e3f2fd; color:#1565c0; border:none; padding:10px; border-radius:8px;">+ 新增時段</button>
+        </div>
+
+        <button class="btn-main" onclick="saveProfile()">儲存更新</button>
+    </div>
 
     <div id="tab-orders" class="page" style="padding-bottom: 80px;">
         <h2 style="margin-left: 5px;">訂單管理</h2>
-        <div id="order-list">
-            <p style="text-align:center; color:#999; margin-top:50px;">正在載入訂單...</p>
-        </div>
+        <div id="order-list"><p style="text-align:center; color:#999; margin-top:50px;">載入中...</p></div>
     </div>
 
     <div class="tab-bar">
-        <div class="tab-item active-tab" onclick="switchTab('profile')">
-            <span class="tab-icon">👤</span> 個人檔案
-        </div>
-        <div class="tab-item" onclick="switchTab('orders')">
-            <span class="tab-icon">📄</span> 訂單管理
-        </div>
+        <div class="tab-item active-tab" onclick="switchTab('profile')"><span class="tab-icon">👤</span>檔案</div>
+        <div class="tab-item" onclick="switchTab('orders')"><span class="tab-icon">📄</span>訂單</div>
     </div>
 
+    <input type="file" id="file-input" style="display:none" accept="image/*" onchange="handleFileSelect()">
+
     <script>
-        // ... 保留 SCRIPT_URL 等變數 ...
-        
-        // 切換分頁功能
-        function switchTab(tabName) {
-            document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active-tab'));
-            
-            if (tabName === 'profile') {
-                document.getElementById('tab-profile').classList.add('active');
-                document.querySelectorAll('.tab-item')[0].classList.add('active-tab');
-            } else {
-                document.getElementById('tab-orders').classList.add('active');
-                document.querySelectorAll('.tab-item')[1].classList.add('active-tab');
-                loadOrders(); // 切換到訂單頁時才讀取
-            }
+        const LIFF_ID = "2008808827-DzeTt84n"; 
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec"; 
+
+        let userProfile = null;
+        let mySchedule = [];
+        let currentUploadType = "";
+
+        async function main() {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            userProfile = await liff.getProfile();
+            checkLogin();
         }
 
-        // 讀取訂單邏輯 (參考 PDF 設計)
-        async function loadOrders() {
-            const container = document.getElementById("order-list");
-            container.innerHTML = '<p style="text-align:center; color:#999;">重新整理中...</p>';
-            
+        async function checkLogin() {
             try {
-                const res = await fetch(SCRIPT_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ action: "getMyOrders", workerName: userProfile.displayName })
-                });
-                const result = await res.json();
-                
-                container.innerHTML = "";
-                if (result.orders.length === 0) {
-                    container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">目前沒有訂單</p>';
-                    return;
-                }
-
-                result.orders.forEach(order => {
-                    // 根據狀態顯示不同樣式
-                    let statusBadge = `<span style="color:orange">待確認</span>`;
-                    let buttons = `
-                        <button class="btn-reject" onclick="updateOrder(${order.row}, '已拒絕')">拒絕</button>
-                        <button class="btn-accept" onclick="updateOrder(${order.row}, '已接單')">接單</button>
-                    `;
-
-                    if (order.status === '已接單') {
-                        statusBadge = `<span style="color:green">✅ 已接單</span>`;
-                        buttons = `<button style="width:100%; background:#eee; border:none; padding:8px; border-radius:5px;" disabled>等待服務開始</button>`;
-                    } else if (order.status === '已拒絕') {
-                        statusBadge = `<span style="color:red">❌ 已拒絕</span>`;
-                        buttons = ``;
-                    }
-
-                    // 轉換時間格式 (只取日期和時間)
-                    const timeStr = new Date(order.time).toLocaleString('zh-TW', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
-
-                    const card = document.createElement("div");
-                    card.className = `order-card ${order.status === '待確認' ? 'pending' : 'accepted'}`;
-                    card.innerHTML = `
-                        <div class="order-header">
-                            <span>📅 ${timeStr}</span>
-                            ${statusBadge}
-                        </div>
-                        <div class="child-info">👶 ${order.child}</div>
-                        <div style="font-size:14px; margin-bottom:5px;">家長：${order.parent}</div>
-                        <div class="note-text">備註：${order.note || "無"}</div>
-                        <div style="text-align:right; font-weight:bold; color:#06c755; margin-bottom:10px;">$${order.price}</div>
-                        <div class="btn-group">
-                            ${buttons}
-                        </div>
-                    `;
-                    container.appendChild(card);
-                });
-
-            } catch (err) {
-                container.innerHTML = "載入失敗";
-            }
-        }
-
-        // 更新訂單狀態 (接單/拒單)
-        async function updateOrder(row, newStatus) {
-            if (!confirm(`確定要變更為「${newStatus}」嗎？`)) return;
-            
-            try {
-                await fetch(SCRIPT_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ action: "updateOrderStatus", row: row, newStatus: newStatus })
-                });
-                alert("更新成功！");
-                loadOrders(); // 重新整理列表
-            } catch (err) {
-                alert("錯誤：" + err);
-            }
-        }
-
-        // ... 原本的 main, checkLogin, saveProfile 等保持不變 ...
-    </script>
+                const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "login", userId
