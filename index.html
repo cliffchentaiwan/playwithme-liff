@@ -8,13 +8,22 @@
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; padding-bottom: 80px; }
         h2 { margin: 10px 0 20px; font-size: 18px; color: #444; }
-        .card { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 15px; display: flex; flex-direction: row; box-shadow: 0 2px 8px rgba(0,0,0,0.05); height: 120px; }
+        .card { 
+            background: white; border-radius: 12px; overflow: hidden; margin-bottom: 15px; 
+            display: flex; flex-direction: row; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+            height: 120px;
+        }
         .card-img { width: 120px; height: 100%; object-fit: cover; background: #eee; }
         .card-body { padding: 12px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
         .name { font-size: 16px; font-weight: bold; color: #333; }
         .tags { color: #888; font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 150px; }
         .price { color: #06c755; font-weight: bold; font-size: 16px; }
-        .btn-book { background-color: #06c755; color: white; border: none; padding: 6px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; align-self: flex-end; }
+        .btn-book { 
+            background-color: #06c755; color: white; border: none; 
+            padding: 6px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; 
+            align-self: flex-end; 
+        }
         #loading { text-align: center; color: #999; margin-top: 50px; }
     </style>
 </head>
@@ -26,7 +35,6 @@
 
     <script>
         const LIFF_ID = "2008808827-DzeTt84n"; 
-        // 您的 API 網址 (維持不動)
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
 
         let userProfile = null;
@@ -60,24 +68,28 @@
                     const card = document.createElement("div");
                     card.className = "card";
                     
-                    // ⚠️ 修正：直接讀取您截圖裡顯示的舊版變數 (img, price)
-                    const name = w.name; 
-                    const photo = w.img || "https://via.placeholder.com/150"; // 這裡改用 img
-                    const rate = w.price || 0; // 這裡改用 price
-                    const desc = w.desc || "暫無介紹";
-                    const tags = w.tags || "";
+                    // 🛡️ 超級相容模式：不管後端傳 photo 還是 img，傳 rate 還是 price，通通抓得到！
+                    // 這裡用了 || (或) 的邏輯
+                    let finalImg = w.photo || w.img; 
+                    if (!finalImg || !finalImg.startsWith("http")) {
+                        finalImg = "https://via.placeholder.com/150/CCCCCC/FFFFFF?text=No+Image";
+                    }
+
+                    let finalPrice = w.rate || w.price;
+                    // 如果價格是 0 或空的，顯示洽談中
+                    const priceDisplay = (finalPrice && finalPrice > 0) ? `$${finalPrice} <small>/hr</small>` : "價格洽談中";
 
                     card.innerHTML = `
-                        <img src="${photo}" class="card-img" onerror="this.src='https://via.placeholder.com/150?text=Error'">
+                        <img src="${finalImg}" class="card-img">
                         <div class="card-body">
                             <div>
-                                <div class="name">${name}</div>
-                                <div class="tags">${tags}</div>
-                                <div style="font-size:12px; color:#666; margin-top:5px;">${desc}</div>
+                                <div class="name">${w.name}</div>
+                                <div class="tags">${w.tags || "#無標籤"}</div>
+                                <div style="font-size:12px; color:#666; margin-top:5px;">${w.intro || "暫無介紹"}</div>
                             </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
-                                <span class="price">$${rate} <small>/hr</small></span>
-                                <button class="btn-book" onclick="book('${name}', ${rate})">預約</button>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span class="price">${priceDisplay}</span>
+                                <button class="btn-book" onclick="book('${w.name}', ${finalPrice})">預約</button>
                             </div>
                         </div>
                     `;
@@ -86,12 +98,12 @@
 
             } catch (err) {
                 console.error(err);
+                document.getElementById("loading").innerText = "讀取資料失敗";
             }
         }
 
         function book(name, price) {
-            if(!confirm(`確定要預約 ${name} 嗎？`)) return;
-            // ... (預約邏輯保持不變)
+            if(!confirm(`要預約 ${name} 嗎？`)) return;
             const data = { action: "book", userName: userProfile.displayName, companion: name, price: price };
             fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
             alert("✅ 預約申請已送出！");
