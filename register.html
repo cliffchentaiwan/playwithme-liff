@@ -37,19 +37,24 @@
 
     <script>
         const LIFF_ID = "2008808827-DzeTt84n"; 
-        const SCRIPT_URL = "YOUR_SCRIPT_URL_HERE"; // ⚠️ 請換成您的 Google Script 網址
+        // 👇 已經幫您換上最新的網址了
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
 
         let profile = null;
 
         async function main() {
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) { liff.login(); return; }
-            profile = await liff.getProfile();
-            
-            document.getElementById("loading").style.display = "none";
-            document.getElementById("form-container").style.display = "block";
-            document.getElementById("my-avatar").src = profile.pictureUrl;
-            document.getElementById("my-name").innerText = "Hi, " + profile.displayName;
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                profile = await liff.getProfile();
+                
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("form-container").style.display = "block";
+                document.getElementById("my-avatar").src = profile.pictureUrl;
+                document.getElementById("my-name").innerText = "Hi, " + profile.displayName;
+            } catch (err) {
+                alert("初始化失敗：" + err);
+            }
         }
 
         function register() {
@@ -69,14 +74,21 @@
                 intro: intro
             };
 
-            // 送出資料
+            const btn = document.querySelector("button");
+            btn.innerText = "處理中...";
+            btn.disabled = true;
+
             fetch(SCRIPT_URL, {
                 method: "POST",
                 body: JSON.stringify(data)
             }).then(() => {
                 alert("✅ 註冊成功！您現在可以在工作台按「上線」接單了。");
                 liff.closeWindow();
-            }).catch(err => alert("錯誤：" + err));
+            }).catch(err => {
+                alert("錯誤：" + err);
+                btn.innerText = "確認註冊 / 更新資料";
+                btn.disabled = false;
+            });
         }
         main();
     </script>
