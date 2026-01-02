@@ -1,118 +1,328 @@
-<div class="card" id="checklist-section">
-            <h3>🛡️ 信任驗證清單</h3>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>陪玩夥伴後台</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; padding-bottom: 80px; color: #333; }
+        
+        .card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .header { display: flex; align-items: center; margin-bottom: 20px; }
+        .avatar { width: 60px; height: 60px; border-radius: 50%; margin-right: 15px; object-fit: cover; border: 2px solid #eee; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .badge-gray { background: #eee; color: #666; }
+        .badge-green { background: #e8f5e9; color: #06c755; }
+        .badge-orange { background: #fff3e0; color: #ef6c00; }
+        
+        label { display: block; font-weight: bold; margin: 15px 0 5px; font-size: 14px; color: #555; }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; background: #fafafa; font-size: 15px; }
+        
+        /* Checklist */
+        .checklist-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
+        .check-status { display: flex; align-items: center; }
+        .check-icon { margin-right: 10px; font-size: 18px; color: #ddd; width: 24px; text-align: center;}
+        .check-icon.done { color: #06c755; }
+        .doc-title { font-size: 15px; font-weight: 500; }
+        
+        .btn-upload { background: #06c755; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .btn-upload:disabled { background: #ccc; cursor: not-allowed; }
+        .uploaded-link { color: #06c755; text-decoration: none; font-size: 13px; margin-right: 10px; }
+
+        .time-slot { background: #e3f2fd; color: #1565c0; padding: 10px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
+        .btn-del { color: #d32f2f; font-weight: bold; cursor: pointer; padding: 5px; }
+
+        .btn-main { width: 100%; padding: 14px; background-color: #06c755; color: white; border: none; border-radius: 30px; font-size: 16px; font-weight: bold; margin-top: 20px; cursor: pointer; box-shadow: 0 4px 10px rgba(6, 199, 85, 0.3); }
+
+        .page { display: none; }
+        .active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="loading" class="page active" style="text-align:center; padding-top: 50px;">
+        <p>🔄 正在讀取您的資料...</p>
+    </div>
+
+    <div id="main-page" class="page">
+        <h2 id="page-title" style="margin-left: 5px;">建立您的檔案</h2>
+        
+        <div class="card">
+            <div class="header">
+                <img id="form-avatar" class="avatar" src="">
+                <div style="flex:1">
+                    <h3 id="form-name" style="margin:0 0 5px 0;"></h3>
+                    <span id="form-status" class="badge badge-gray">未驗證</span>
+                </div>
+            </div>
+
+            <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-top:10px;">
+                <label style="margin-top:0">目前狀態</label>
+                <select id="inp-online-status" style="background:white;">
+                    <option value="Offline">🔴 休息中 (隱藏)</option>
+                    <option value="Online">🟢 開放接單 (上線)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🛡️ 信任驗證 (必填)</h3>
+            <p style="font-size:13px; color:#888; margin-bottom:15px;">完成驗證後，家長對您的信任度會大幅提升。</p>
             
             <div class="checklist-item">
-                <span class="check-icon done">✔</span>
-                <span>手機號碼綁定 (LINE)</span>
+                <div class="check-status">
+                    <span class="check-icon done">✔</span>
+                    <span class="doc-title">手機號碼綁定 (LINE)</span>
+                </div>
             </div>
 
             <div class="checklist-item">
-                <span class="check-icon" id="icon-front">●</span>
-                <div style="flex:1">
-                    <span>身分證 (正面)</span>
+                <div class="check-status">
+                    <span class="check-icon" id="icon-front">●</span>
+                    <span class="doc-title">身分證 (正面)</span>
+                </div>
+                <div>
+                    <a id="link-front" href="#" target="_blank" class="uploaded-link" style="display:none">查看</a>
                     <button class="btn-upload" onclick="triggerUpload('front')">上傳</button>
-                    <a id="link-front" href="#" target="_blank" style="display:none; font-size:12px;">(已上傳, 點擊查看)</a>
                 </div>
             </div>
 
             <div class="checklist-item">
-                <span class="check-icon" id="icon-back">●</span>
-                <div style="flex:1">
-                    <span>身分證 (反面)</span>
+                <div class="check-status">
+                    <span class="check-icon" id="icon-back">●</span>
+                    <span class="doc-title">身分證 (反面)</span>
+                </div>
+                <div>
+                    <a id="link-back" href="#" target="_blank" class="uploaded-link" style="display:none">查看</a>
                     <button class="btn-upload" onclick="triggerUpload('back')">上傳</button>
-                    <a id="link-back" href="#" target="_blank" style="display:none; font-size:12px;">(已上傳)</a>
                 </div>
             </div>
 
             <div class="checklist-item">
-                <span class="check-icon" id="icon-police">●</span>
-                <div style="flex:1">
-                    <span>良民證</span>
+                <div class="check-status">
+                    <span class="check-icon" id="icon-police">●</span>
+                    <span class="doc-title">良民證</span>
+                </div>
+                <div>
+                    <a id="link-police" href="#" target="_blank" class="uploaded-link" style="display:none">查看</a>
                     <button class="btn-upload" onclick="triggerUpload('police')">上傳</button>
-                    <a id="link-police" href="#" target="_blank" style="display:none; font-size:12px;">(已上傳)</a>
                 </div>
             </div>
         </div>
 
-        <input type="file" id="file-input" style="display:none" accept="image/*" onchange="handleFileSelect()">
+        <div class="card">
+            <h3>📝 個人資料</h3>
+            <label>設定時薪 (NT$)</label>
+            <input type="number" id="inp-rate" placeholder="例如：350">
 
-<style>
-        /* 新增上傳按鈕樣式 */
-        .btn-upload { background: #eee; border: none; padding: 5px 10px; border-radius: 5px; margin-left: 10px; cursor: pointer; font-size: 12px; }
-        .btn-upload:active { background: #ddd; }
-    </style>
+            <label>專長標籤</label>
+            <input type="text" id="inp-tags" placeholder="例如：#美術 #鋼琴 #伴讀">
+
+            <label>自我介紹</label>
+            <textarea id="inp-intro" rows="3" placeholder="請簡單介紹您的經驗..."></textarea>
+            
+            <label>銀行帳號 (薪資轉帳用)</label>
+            <input type="text" id="inp-bank" placeholder="銀行代碼 + 帳號">
+        </div>
+
+        <div class="card">
+            <h3>📅 可預約時段</h3>
+            <div id="schedule-list" style="margin-bottom:15px;">
+                </div>
+            
+            <div style="display:flex; gap:10px;">
+                <select id="sel-day" style="flex:1">
+                    <option value="週一">週一</option>
+                    <option value="週二">週二</option>
+                    <option value="週三">週三</option>
+                    <option value="週四">週四</option>
+                    <option value="週五">週五</option>
+                    <option value="週六">週六</option>
+                    <option value="週日">週日</option>
+                </select>
+                <select id="sel-time" style="flex:1">
+                    <option value="上午 (09-12)">上午 (09-12)</option>
+                    <option value="下午 (13-17)">下午 (13-17)</option>
+                    <option value="晚上 (18-21)">晚上 (18-21)</option>
+                </select>
+            </div>
+            <button onclick="addSlot()" style="width:100%; margin-top:10px; background:#e3f2fd; color:#1565c0; border:none; padding:10px; border-radius:8px; font-weight:bold;">+ 新增時段</button>
+        </div>
+
+        <button class="btn-main" onclick="saveProfile()">儲存並更新資料</button>
+        <p style="text-align:center; font-size:12px; color:#999; margin-top:20px;">HES TECHS © 2026</p>
+    </div>
+
+    <input type="file" id="file-input" style="display:none" accept="image/*" onchange="handleFileSelect()">
 
     <script>
-        // ... 原本的 main, checkLogin ...
-        
-        // 在 checkLogin 裡面，要讀取證件狀態並更新 UI
-        // 請將這段邏輯加到 checkLogin 的 if(result.isRegistered) 裡面
-        /*
-            if (d.docFront) updateDocUI('front', d.docFront);
-            if (d.docBack) updateDocUI('back', d.docBack);
-            if (d.docPolice) updateDocUI('police', d.docPolice);
-        */
+        const LIFF_ID = "2008808827-DzeTt84n"; 
+        // ⚠️ 這是您剛剛提供的最新 Script (包含 Folder ID)
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec"; 
 
-        // --- 新增：處理上傳邏輯 ---
+        let userProfile = null;
+        let mySchedule = [];
         let currentUploadType = "";
 
-        function triggerUpload(type) {
-            currentUploadType = type;
-            document.getElementById("file-input").click(); // 觸發隱藏的檔案選擇器
+        async function main() {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            userProfile = await liff.getProfile();
+            checkLogin();
         }
 
+        async function checkLogin() {
+            try {
+                const res = await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "login", userId: userProfile.userId })
+                });
+                const result = await res.json();
+
+                document.getElementById("loading").classList.remove("active");
+                document.getElementById("main-page").classList.add("active");
+                document.getElementById("form-avatar").src = userProfile.pictureUrl;
+                document.getElementById("form-name").innerText = userProfile.displayName;
+
+                if (result.isRegistered) {
+                    // 舊用戶：填入資料
+                    document.getElementById("page-title").innerText = "編輯個人檔案";
+                    const d = result.data;
+                    document.getElementById("inp-rate").value = d.rate;
+                    document.getElementById("inp-tags").value = d.tags;
+                    document.getElementById("inp-intro").value = d.intro;
+                    document.getElementById("inp-bank").value = d.bank;
+                    document.getElementById("inp-online-status").value = d.status;
+                    
+                    // 恢復排程
+                    try { mySchedule = JSON.parse(d.schedule); } catch(e){ mySchedule=[]; }
+                    renderSchedule();
+
+                    // 更新驗證狀態 UI
+                    if(d.verified === "Verified") {
+                        document.getElementById("form-status").innerText = "已認證";
+                        document.getElementById("form-status").className = "badge badge-green";
+                    } else if (d.verified === "Pending Review") {
+                        document.getElementById("form-status").innerText = "審核中";
+                        document.getElementById("form-status").className = "badge badge-orange";
+                    }
+
+                    // 更新文件上傳狀態
+                    if(d.docFront) updateDocUI('front', d.docFront);
+                    if(d.docBack) updateDocUI('back', d.docBack);
+                    if(d.docPolice) updateDocUI('police', d.docPolice);
+
+                } else {
+                    // 新用戶
+                    document.getElementById("page-title").innerText = "歡迎加入！";
+                    alert("請完成下方資料以建立檔案");
+                }
+            } catch (err) {
+                alert("連線錯誤：" + err);
+            }
+        }
+
+        // --- 時段功能 ---
+        function addSlot() {
+            const day = document.getElementById("sel-day").value;
+            const time = document.getElementById("sel-time").value;
+            const slot = `${day} ${time}`;
+            if (!mySchedule.includes(slot)) {
+                mySchedule.push(slot);
+                // 簡單排序
+                const dayOrder = {"週一":1, "週二":2, "週三":3, "週四":4, "週五":5, "週六":6, "週日":7};
+                mySchedule.sort((a,b) => dayOrder[a.substr(0,2)] - dayOrder[b.substr(0,2)]);
+                renderSchedule();
+            }
+        }
+        function removeSlot(index) {
+            mySchedule.splice(index, 1);
+            renderSchedule();
+        }
+        function renderSchedule() {
+            const container = document.getElementById("schedule-list");
+            container.innerHTML = "";
+            mySchedule.forEach((slot, index) => {
+                const div = document.createElement("div");
+                div.className = "time-slot";
+                div.innerHTML = `<span>🕒 ${slot}</span> <span class="btn-del" onclick="removeSlot(${index})">✕</span>`;
+                container.appendChild(div);
+            });
+        }
+
+        // --- 上傳功能 ---
+        function triggerUpload(type) {
+            currentUploadType = type;
+            document.getElementById("file-input").click();
+        }
         function handleFileSelect() {
             const file = document.getElementById("file-input").files[0];
             if (!file) return;
 
-            // 顯示讀取中
             const btn = document.querySelector(`button[onclick="triggerUpload('${currentUploadType}')"]`);
-            const originalText = btn.innerText;
             btn.innerText = "上傳中...";
             btn.disabled = true;
 
-            // 轉成 Base64
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = async function() {
-                const base64Data = reader.result.split(',')[1]; // 去掉開頭的 data:image/jpeg;base64,
-                
+                const base64Data = reader.result.split(',')[1];
                 const payload = {
                     action: "uploadDoc",
                     userId: userProfile.userId,
                     docType: currentUploadType,
-                    fileName: userProfile.displayName + "_" + currentUploadType + ".jpg",
+                    fileName: `${userProfile.displayName}_${currentUploadType}.jpg`,
                     mimeType: file.type,
                     fileData: base64Data
                 };
-
                 try {
                     const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
                     const result = await res.json();
-                    
                     if (result.success) {
                         alert("✅ 上傳成功！");
                         updateDocUI(currentUploadType, result.url);
-                    } else {
-                        alert("上傳失敗");
-                    }
-                } catch (err) {
-                    alert("錯誤：" + err);
-                } finally {
-                    btn.innerText = "重新上傳";
-                    btn.disabled = false;
-                }
+                    } else { alert("上傳失敗"); }
+                } catch (e) { alert("錯誤：" + e); } 
+                finally { btn.innerText = "重新上傳"; btn.disabled = false; }
             };
         }
-
         function updateDocUI(type, url) {
             document.getElementById("icon-" + type).className = "check-icon done";
             document.getElementById("icon-" + type).innerText = "✔";
-            
             const link = document.getElementById("link-" + type);
             link.href = url;
-            link.style.display = "inline";
+            link.style.display = "inline-block";
         }
 
-        // ... 原本的 saveProfile ...
+        // --- 儲存資料 ---
+        async function saveProfile() {
+            const btn = document.querySelector(".btn-main");
+            btn.innerText = "儲存中...";
+            btn.disabled = true;
+
+            const data = {
+                action: "updateProfile",
+                userId: userProfile.userId,
+                name: userProfile.displayName,
+                photo: userProfile.pictureUrl,
+                rate: document.getElementById("inp-rate").value,
+                tags: document.getElementById("inp-tags").value,
+                intro: document.getElementById("inp-intro").value,
+                bank: document.getElementById("inp-bank").value,
+                status: document.getElementById("inp-online-status").value,
+                schedule: JSON.stringify(mySchedule)
+            };
+
+            try {
+                await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
+                alert("✅ 資料更新成功！");
+                btn.innerText = "儲存並更新資料";
+                btn.disabled = false;
+            } catch(e) { alert("失敗：" + e); }
+        }
+
+        main();
     </script>
+</body>
+</html>
