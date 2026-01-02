@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>陪玩員工作台</title>
+    <title>陪玩員工作台 (修復版)</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: #333; color: white; padding: 20px; text-align: center; padding-bottom: 60px; }
@@ -13,18 +13,20 @@
         .btn { width: 100%; padding: 15px; font-size: 16px; border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; font-weight: bold; transition: 0.2s; }
         .btn:disabled { background-color: #666; cursor: not-allowed; }
         .btn-gps { background-color: #2196F3; color: white; }
-        .btn-gps:active { background-color: #1976D2; }
         .btn-scan { background-color: #06c755; color: white; }
-        .btn-scan:active { background-color: #05a546; }
         .status-box { background: #222; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 13px; color: #aaa; text-align: left; min-height: 20px; word-break: break-all; }
         .profile-img { width: 70px; height: 70px; border-radius: 50%; border: 3px solid #06c755; margin-bottom: 10px; }
+        /* 錯誤訊息專用區 */
+        #debug-console { color: #ff5555; background: #000; padding: 10px; margin-bottom: 20px; border: 1px solid #ff5555; display: none; text-align: left; font-size: 12px; }
     </style>
 </head>
 <body>
 
+    <div id="debug-console"></div>
+
     <div id="profile">
         <div class="card">
-            <p>正在讀取身份...</p>
+            <p id="loading-text">正在連接 LINE 系統...</p>
         </div>
     </div>
 
@@ -43,24 +45,42 @@
     </div>
 
     <script>
+        // 顯示錯誤的工具
+        function logError(msg) {
+            const debugBox = document.getElementById("debug-console");
+            debugBox.style.display = "block";
+            debugBox.innerHTML += "⚠️ " + msg + "<br>";
+        }
+        window.onerror = function(message, source, lineno, colno, error) {
+            logError(`系統錯誤: ${message} (Line: ${lineno})`);
+        };
+
         const LIFF_ID = "2008808827-DzeTt84n"; 
-        // 你的 Google Script 網址
         const API_URL = "https://script.google.com/macros/s/AKfycbwfs3NTl9VmGiqcZZ_bXjwOFvOJsyCeKWiYSuAGC3Q9BNYxk1fmxktF-LkNAzvP94Zk/exec";
         
         let userProfile = null;
 
         async function main() {
             try {
+                document.getElementById("loading-text").innerText = "1. 初始化 LIFF...";
                 await liff.init({ liffId: LIFF_ID });
+                
+                document.getElementById("loading-text").innerText = "2. 檢查登入狀態...";
                 if (!liff.isLoggedIn()) {
-                    liff.login(); return;
+                    document.getElementById("loading-text").innerText = "未登入，跳轉中...";
+                    liff.login();
+                    return;
                 }
+
+                document.getElementById("loading-text").innerText = "3. 讀取個人資料...";
                 userProfile = await liff.getProfile();
+                
+                // 成功載入！
                 document.getElementById("profile").innerHTML = `
                     <div class="card">
                         <img src="${userProfile.pictureUrl}" class="profile-img">
                         <h3>${userProfile.displayName}</h3>
-                        <p>🟢 狀態：工作中</p>
+                        <p>🟢 系統連線正常</p>
                     </div>
                 `;
                 
@@ -68,8 +88,10 @@
                     document.getElementById("btn-scan").disabled = true;
                     document.getElementById("scan-status").innerText = "⚠️ 掃碼功能需在 LINE App 內使用";
                 }
+
             } catch (err) {
-                alert("初始化錯誤：" + err);
+                logError("啟動失敗: " + err.message);
+                document.getElementById("loading-text").innerText = "❌ 發生錯誤，請看上方紅字";
             }
         }
 
@@ -93,11 +115,68 @@
                     const locString = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
                     statusBox.innerHTML = `✅ 定位成功：${locString}`;
                     
-                    // 傳送資料到 Google Sheet
+                    // 傳送資料
                     sendToSheet("GPS打卡", locString);
                     
-                    // (選用) 在聊天室回報
-                    if (liff.isInClient()) {
+                    // 聊天室回報 (加強防呆，避免 userProfile 為空時當機)
+                    if (liff.isInClient() && userProfile) {
                         liff.sendMessages([{
                             type: 'text',
-                            text: `【打卡回報】\n我是
+                            text: `【打卡回報】\n我是 ${userProfile.displayName}，我已抵達現場！\n📍 座標：${locString}`
+                        }]).catch(err => logError("訊息發送失敗:" + err));
+                    }
+                    btn.innerText = "已打卡";
+                    btn.disabled = false;
+                },
+                (err) => {
+                    statusBox.innerText = "定位失敗: " + err.message;
+                    logError("GPS 錯誤: " + err.message);
+                    btn.disabled = false;
+                    btn.innerText = "傳送 GPS 位置";
+                }
+            );
+        }
+
+        // 2. 掃碼功能
+        async function handleScan() {
+            const statusBox = document.getElementById("scan-status");
+            try {
+                if (!liff.isInClient()) {
+                    alert("請在手機 LINE 中開啟才能掃描");
+                    return;
+                }
+                const result = await liff.scanCodeV2();
+                if (result.value) {
+                    statusBox.innerText = "✅ 掃描成功: " + result.value;
+                    sendToSheet("完工掃碼", "代碼:" + result.value);
+                    alert("掃描成功！");
+                }
+            } catch (err) {
+                statusBox.innerText = "掃描取消或失敗";
+                logError("掃碼錯誤: " + err);
+            }
+        }
+
+        function sendToSheet(actionType, detail) {
+            const name = userProfile ? userProfile.displayName : "未知人員";
+            const data = {
+                userName: name,
+                companion: actionType, 
+                price: detail
+            };
+
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify(data),
+                headers: { "Content-Type": "text/plain" }
+            }).then(() => {
+                console.log("資料已送出");
+            }).catch(err => {
+                logError("資料庫連線失敗: " + err);
+            });
+        }
+
+        main();
+    </script>
+</body>
+</html>
