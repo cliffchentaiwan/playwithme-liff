@@ -7,9 +7,9 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; padding-bottom: 80px; }
-        
         h2 { margin: 10px 0 20px; font-size: 18px; color: #444; }
 
+        /* 卡片設計 */
         .card { 
             background: white; border-radius: 12px; overflow: hidden; margin-bottom: 15px; 
             display: flex; flex-direction: row; 
@@ -38,7 +38,7 @@
 
     <script>
         const LIFF_ID = "2008808827-DzeTt84n"; 
-        // 您的 API 網址
+        // 這是您的後端網址 (確保跟 worker.html 用的是同一串)
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
 
         let userProfile = null;
@@ -48,7 +48,6 @@
                 await liff.init({ liffId: LIFF_ID });
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 userProfile = await liff.getProfile();
-                
                 loadWorkers(); 
             } catch (err) {
                 document.getElementById("loading").innerText = "初始化失敗";
@@ -57,7 +56,6 @@
 
         async function loadWorkers() {
             try {
-                // 呼叫 Google Script 取得名單
                 const res = await fetch(SCRIPT_URL); 
                 const workers = await res.json();
                 
@@ -66,7 +64,7 @@
                 container.innerHTML = ""; 
 
                 if (!workers || workers.length === 0) {
-                    container.innerHTML = "<p style='text-align:center;color:#999;'>目前沒有人上線，請稍後再試。</p>";
+                    container.innerHTML = "<p style='text-align:center;color:#999;'>目前沒有人上線<br>(請確認工作台狀態為 Online)</p>";
                     return;
                 }
 
@@ -74,5 +72,59 @@
                     const card = document.createElement("div");
                     card.className = "card";
                     
-                    // 修正點：配合您的後端，改用 w.img, w.desc, w.price
-                    const imgUrl = w.img ? w.img : "
+                    // 修正：配合新的後端變數名 (photo, rate, desc)
+                    // 防呆：如果照片是空的，給一張預設圖
+                    const imgUrl = w.photo ? w.photo : "https://via.placeholder.com/150?text=No+Image";
+
+                    card.innerHTML = `
+                        <img src="${imgUrl}" class="card-img" onerror="this.src='https://via.placeholder.com/150?text=Error'">
+                        <div class="card-body">
+                            <div>
+                                <div class="name">${w.name}</div>
+                                <div class="tags">${w.tags}</div>
+                                <div style="font-size:12px; color:#666; margin-top:5px;">${w.desc || "這位夥伴很害羞，沒寫介紹"}</div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                                <span class="price">$${w.rate} <small>/hr</small></span>
+                                <button class="btn-book" onclick="book('${w.name}', ${w.rate})">預約</button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById("loading").innerText = "讀取資料失敗";
+            }
+        }
+
+        function book(name, price) {
+            if(!confirm(`確定要預約 ${name} 嗎？`)) return;
+            
+            // 顯示一個簡單的載入中
+            alert("正在送出預約...");
+            
+            const data = { action: "book", userName: userProfile.displayName, companion: name, price: price };
+            
+            fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) })
+                .then(res => res.json())
+                .then(json => {
+                    // 預約成功後，顯示 QR Code 畫面
+                    document.body.innerHTML = `
+                        <div style="text-align:center; padding-top:50px;">
+                            <h1 style="color:#06c755; font-size:50px;">✅</h1>
+                            <h2>預約成功！</h2>
+                            <p>請等待 ${name} 確認訂單。</p>
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=ORDER-${Date.now()}" width="200">
+                            <p style="color:#888; font-size:12px;">(結案時請出示此碼)</p>
+                            <button onclick="location.reload()" style="padding:10px 30px; margin-top:20px; border-radius:20px; border:1px solid #ccc; background:white;">返回首頁</button>
+                        </div>
+                    `;
+                });
+        }
+
+        main();
+    </script>
+</body>
+</html>
