@@ -38,7 +38,7 @@
 
     <script>
         const LIFF_ID = "2008808827-DzeTt84n"; 
-        // 👇 已經幫您換上最新的網址了
+        // 您的 API 網址
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
 
         let userProfile = null;
@@ -73,37 +73,6 @@
                 workers.forEach(w => {
                     const card = document.createElement("div");
                     card.className = "card";
-                    card.innerHTML = `
-                        <img src="${w.photo}" class="card-img">
-                        <div class="card-body">
-                            <div>
-                                <div class="name">${w.name}</div>
-                                <div class="tags">${w.tags}</div>
-                            </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span class="price">$${w.rate} <small>/hr</small></span>
-                                <button class="btn-book" onclick="book('${w.name}', ${w.rate})">預約</button>
-                            </div>
-                        </div>
-                    `;
-                    container.appendChild(card);
-                });
-
-            } catch (err) {
-                console.error(err);
-                document.getElementById("loading").innerText = "讀取資料失敗，請檢查網路";
-            }
-        }
-
-        function book(name, price) {
-            if(!confirm(`要預約 ${name} 嗎？`)) return;
-            
-            const data = { action: "book", userName: userProfile.displayName, companion: name, price: price };
-            fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
-            alert("✅ 預約申請已送出！");
-        }
-
-        main();
-    </script>
-</body>
-</html>
+                    
+                    // 修正點：配合您的後端，改用 w.img, w.desc, w.price
+                    const imgUrl = w.img ? w.img : "
