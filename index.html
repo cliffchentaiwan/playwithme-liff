@@ -3,98 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>陪玩服務測試</title>
+    <title>為人母 - 尋找陪玩員</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: "Micirosoft JhengHei", sans-serif; padding: 20px; text-align: center; background-color: #f5f5f5; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .btn { background-color: #06c755; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; width: 100%; margin-top: 10px; cursor: pointer; }
-        .btn:disabled { background-color: #ccc; }
-        #status { color: red; font-size: 12px; }
-        img { border-radius: 50%; width: 80px; height: 80px; margin-bottom: 10px; }
+        /* 基礎設定 */
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; padding-bottom: 80px; }
+        
+        /* 頂部導航 */
+        .header { background-color: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .header h1 { margin: 0; font-size: 20px; color: #333; }
+        .header p { margin: 5px 0 0; color: #666; font-size: 14px; }
+
+        /* 分類標籤 */
+        .tags-bar { padding: 15px 20px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+        .tag { display: inline-block; padding: 6px 15px; background: white; border-radius: 20px; margin-right: 10px; font-size: 14px; color: #666; border: 1px solid #ddd; }
+        .tag.active { background-color: #06c755; color: white; border-color: #06c755; }
+
+        /* 列表容器 */
+        .container { padding: 0 15px; }
+
+        /* 人員卡片 */
+        .card { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+        .card-img { width: 100%; height: 200px; object-fit: cover; background-color: #eee; }
+        .card-body { padding: 15px; }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .name { font-size: 18px; font-weight: bold; color: #333; }
+        .rating { color: #ffc107; font-size: 14px; }
+        
+        .desc { color: #666; font-size: 14px; margin-bottom: 10px; line-height: 1.4; }
+        
+        .badges { margin-bottom: 15px; }
+        .badge { display: inline-block; font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 3px 8px; border-radius: 4px; margin-right: 5px; }
+
+        .price-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 10px; }
+        .price { font-size: 18px; font-weight: bold; color: #06c755; }
+        .price small { font-size: 12px; color: #999; font-weight: normal; }
+        
+        .btn-book { background-color: #06c755; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .btn-book:active { background-color: #05a546; }
+
+        /* 載入中畫面 */
+        #loading { text-align: center; padding: 50px; color: #999; }
     </style>
 </head>
 <body>
-    <h2>陪玩平台功能測試</h2>
-    
-    <div class="card" id="profileCard">
-        <p>正在讀取使用者資料...</p>
+
+    <div class="header">
+        <h1>為人母 MomDay</h1>
+        <p>為您媒合最專業的陪玩夥伴</p>
     </div>
 
-    <div class="card">
-        <h3>📍 GPS 定位測試</h3>
-        <p id="geoMsg">等待操作...</p>
-        <button class="btn" onclick="getLocation()">回報目前位置</button>
+    <div class="tags-bar">
+        <span class="tag active">全部</span>
+        <span class="tag">台北市</span>
+        <span class="tag">新北市</span>
+        <span class="tag">急件預約</span>
+        <span class="tag">英語陪玩</span>
     </div>
 
-    <div class="card">
-        <h3>📸 結單掃碼測試</h3>
-        <p id="scanMsg">請點擊下方按鈕開啟相機</p>
-        <button class="btn" id="scanBtn" onclick="scanCode()">開啟掃描器</button>
-    </div>
-
-    <p id="errorMsg" style="color:red;"></p>
+    <div id="loading">載入資料中...</div>
+    <div class="container" id="card-list">
+        </div>
 
     <script>
-        // 你的 LIFF ID
-        const LIFF_ID = "2008808827-DzeTt84n";
+        // 假資料 (之後會改從資料庫抓)
+        const companions = [
+            {
+                id: 1,
+                name: "小美姐姐",
+                img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80",
+                rating: 4.9,
+                reviews: 120,
+                desc: "幼教系畢業，擅長繪本導讀與創意手作，喜歡跟孩子互動！",
+                tags: ["#繪本導讀", "#手作DIY", "#幼教專業"],
+                price: 350
+            },
+            {
+                id: 2,
+                name: "Jason 哥哥",
+                img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=600&q=80",
+                rating: 4.8,
+                reviews: 85,
+                desc: "體育系大學生，精力充沛，最適合帶孩子去公園放電、打球。",
+                tags: ["#戶外運動", "#球類教學", "#體力活"],
+                price: 400
+            },
+            {
+                id: 3,
+                name: "愛麗絲",
+                img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=600&q=80",
+                rating: 5.0,
+                reviews: 42,
+                desc: "雙語家庭長大，可以全英文陪玩，讓孩子在遊戲中自然開口說英文。",
+                tags: ["#全美語", "#鋼琴陪練", "#耐心"],
+                price: 500
+            }
+        ];
+
+        // 初始化 LIFF
+        const LIFF_ID = "2008808827-DzeTt84n"; // 你的 LIFF ID
 
         async function main() {
             try {
                 await liff.init({ liffId: LIFF_ID });
+                
+                // 檢查登入
                 if (!liff.isLoggedIn()) {
                     liff.login();
                     return;
                 }
-                
-                // 取得使用者資料
-                const profile = await liff.getProfile();
-                document.getElementById("profileCard").innerHTML = `
-                    <img src="${profile.pictureUrl}" alt="user">
-                    <h3>你好，${profile.displayName}</h3>
-                    <p>身份驗證成功 ✅</p>
+
+                renderList(); // 顯示列表
+            } catch (err) {
+                console.error(err);
+                document.getElementById("loading").innerText = "載入失敗，請重新整理";
+            }
+        }
+
+        // 產生卡片列表
+        function renderList() {
+            const container = document.getElementById("card-list");
+            document.getElementById("loading").style.display = "none"; // 隱藏載入中文字
+
+            companions.forEach(item => {
+                const card = document.createElement("div");
+                card.className = "card";
+                card.innerHTML = `
+                    <img src="${item.img}" class="card-img" alt="${item.name}">
+                    <div class="card-body">
+                        <div class="card-header">
+                            <span class="name">${item.name}</span>
+                            <span class="rating">⭐ ${item.rating} (${item.reviews})</span>
+                        </div>
+                        <p class="desc">${item.desc}</p>
+                        <div class="badges">
+                            ${item.tags.map(tag => `<span class="badge">${tag}</span>`).join('')}
+                        </div>
+                        <div class="price-row">
+                            <span class="price">$${item.price} <small>/小時</small></span>
+                            <button class="btn-book" onclick="book('${item.name}')">立即預約</button>
+                        </div>
+                    </div>
                 `;
-
-                // 檢查是否是在 LINE App 內開啟 (掃碼功能只能在 LINE App 內用)
-                if (!liff.isInClient()) {
-                    document.getElementById("scanBtn").disabled = true;
-                    document.getElementById("scanMsg").innerText = "掃碼功能僅限手機版 LINE 使用";
-                }
-
-            } catch (err) {
-                document.getElementById("errorMsg").innerText = "初始化失敗: " + err.message;
-            }
+                container.appendChild(card);
+            });
         }
 
-        // 測試 GPS
-        function getLocation() {
-            if (!navigator.geolocation) {
-                document.getElementById("geoMsg").innerText = "你的裝置不支援 GPS";
-                return;
-            }
-            document.getElementById("geoMsg").innerText = "定位中...";
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    document.getElementById("geoMsg").innerHTML = `定位成功！<br>緯度: ${lat}<br>經度: ${lng}`;
-                    // 這裡未來會接上：傳送資料給伺服器
-                },
-                (error) => {
-                    document.getElementById("geoMsg").innerText = "定位失敗，請確認手機已授權 GPS";
-                }
-            );
-        }
-
-        // 測試掃碼
-        async function scanCode() {
-            try {
-                const result = await liff.scanCodeV2(); // 呼叫掃描器
-                document.getElementById("scanMsg").innerText = "掃描結果: " + result.value;
-            } catch (err) {
-                document.getElementById("scanMsg").innerText = "掃描失敗: " + err.message;
-                alert("請確認你在 LIFF 設定中有開啟 Scan QR 選項！");
-            }
+        // 預約按鈕功能 (暫時)
+        function book(name) {
+            // 這裡之後會接金流和資料庫
+            alert(`您選擇了預約：${name}\n(此功能將會連接 LINE Pay 付款)`);
         }
 
         main();
