@@ -3,157 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>陪玩員工作台</title>
+    <title>夥伴工作台</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #333; color: white; padding: 20px; text-align: center; padding-bottom: 60px; }
-        .card { background: #444; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        h2 { margin-top: 0; color: #06c755; font-size: 20px; }
-        p { color: #ccc; font-size: 14px; }
-        .btn { width: 100%; padding: 15px; font-size: 16px; border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; font-weight: bold; transition: 0.2s; }
-        .btn:disabled { background-color: #666; cursor: not-allowed; }
-        .btn-gps { background-color: #2196F3; color: white; }
-        .btn-scan { background-color: #06c755; color: white; }
+        /* APP 風格基礎設定 */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #121212; color: white; margin: 0; padding: 0; padding-bottom: 80px; }
         
-        .status-toggle { margin-bottom: 20px; padding: 20px; background: #222; border-radius: 15px; }
-        .toggle-btn { padding: 10px 30px; border-radius: 30px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; }
-        .offline { background-color: #555; color: #aaa; }
-        .online { background-color: #06c755; color: white; box-shadow: 0 0 15px rgba(6, 199, 85, 0.5); }
+        /* 頂部資訊卡 */
+        .header-card { background: linear-gradient(135deg, #06c755, #04a044); padding: 25px 20px; border-radius: 0 0 25px 25px; box-shadow: 0 4px 15px rgba(6, 199, 85, 0.3); display: flex; align-items: center; }
+        .profile-img { width: 60px; height: 60px; border-radius: 50%; border: 3px solid white; margin-right: 15px; }
+        .header-info h2 { margin: 0; font-size: 20px; }
+        .header-info p { margin: 5px 0 0; opacity: 0.9; font-size: 14px; }
         
-        .status-box { background: #222; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 13px; color: #aaa; text-align: left; min-height: 20px; word-break: break-all; }
-        .profile-img { width: 70px; height: 70px; border-radius: 50%; border: 3px solid #06c755; margin-bottom: 10px; }
+        /* 分頁內容區 */
+        .tab-content { display: none; padding: 20px; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 卡片通用樣式 */
+        .card { background: #1e1e1e; padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .card h3 { margin-top: 0; color: #06c755; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+
+        /* 訂單列表樣式 */
+        .order-item { border-left: 4px solid #06c755; background: #2a2a2a; padding: 15px; margin-bottom: 10px; border-radius: 8px; }
+        .order-time { font-size: 12px; color: #aaa; margin-bottom: 5px; }
+        .order-detail { font-size: 16px; font-weight: bold; display: flex; justify-content: space-between; }
+        .order-status { font-size: 12px; background: #444; padding: 3px 8px; border-radius: 10px; }
+
+        /* 表單樣式 */
+        label { display: block; margin-bottom: 8px; color: #ccc; font-size: 14px; }
+        input, textarea { width: 100%; background: #333; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; font-size: 16px; }
+        textarea { resize: none; }
+        
+        /* 按鈕樣式 */
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background-color: #06c755; color: white; }
+        .btn-secondary { background-color: #333; color: white; margin-top: 10px; }
+        
+        /* 底部導航列 */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #1e1e1e; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #333; z-index: 100; }
+        .nav-item { color: #888; text-align: center; font-size: 12px; cursor: pointer; flex: 1; }
+        .nav-item.active { color: #06c755; }
+        .nav-icon { font-size: 24px; display: block; margin-bottom: 4px; }
+
+        /* 開關樣式 */
+        .toggle-btn { padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; cursor: pointer; margin-bottom: 20px; }
+        .is-online { background: rgba(6, 199, 85, 0.2); color: #06c755; border: 1px solid #06c755; }
+        .is-offline { background: #333; color: #888; border: 1px solid #555; }
+
     </style>
 </head>
 <body>
 
-    <div id="profile">
-        <div class="card">
-            <p>正在讀取身份...</p>
+    <div class="header-card">
+        <img id="head-img" src="" class="profile-img">
+        <div class="header-info">
+            <h2 id="head-name">載入中...</h2>
+            <p id="head-status">準備開始工作</p>
         </div>
     </div>
 
-    <div class="status-toggle">
-        <h3>🟢 接單狀態</h3>
-        <p id="status-text">目前狀態：離線 (家長看不到你)</p>
-        <button id="btn-toggle" class="toggle-btn offline" onclick="toggleStatus()">🔴 點此上線接單</button>
+    <div id="tab-home" class="tab-content active">
+        <div id="status-toggle" class="toggle-btn is-offline" onclick="toggleStatus()">
+            🔴 目前離線中 (點此上線)
+        </div>
+
+        <div class="card">
+            <h3>📋 任務清單 (Checklist)</h3>
+            <div id="order-list">
+                <p style="text-align:center; color:#666; padding:20px;">載入訂單中...</p>
+            </div>
+        </div>
     </div>
 
-    <div class="card">
-        <h2>📍 抵達打卡</h2>
-        <p>到達指定地點後，請點擊回報。</p>
-        <button class="btn btn-gps" id="btn-gps" onclick="handleGPS()">傳送 GPS 位置</button>
-        <div class="status-box" id="gps-status">等待操作...</div>
+    <div id="tab-profile" class="tab-content">
+        <div class="card">
+            <h3>👤 編輯個人資料</h3>
+            <label>每小時費率 ($)</label>
+            <input type="number" id="edit-rate">
+            
+            <label>專長標籤</label>
+            <input type="text" id="edit-tags" placeholder="#畫畫, #鋼琴">
+            
+            <label>自我介紹</label>
+            <textarea id="edit-intro" rows="4"></textarea>
+
+            <button class="btn btn-primary" onclick="saveProfile()">儲存修改</button>
+        </div>
+        
+        <div class="card">
+            <h3>⚙️ 系統功能</h3>
+            <button class="btn btn-secondary" onclick="handleScan()">📸 完工掃碼</button>
+        </div>
     </div>
 
-    <div class="card">
-        <h2>📸 完工掃碼</h2>
-        <p>請掃描家長手機上的 QR Code 以結案。</p>
-        <button class="btn btn-scan" id="btn-scan" onclick="handleScan()">啟動相機掃描</button>
-        <div class="status-box" id="scan-status">等待操作...</div>
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('home')">
+            <span class="nav-icon">🏠</span>
+            接單任務
+        </div>
+        <div class="nav-item" onclick="switchTab('profile')">
+            <span class="nav-icon">👤</span>
+            個人檔案
+        </div>
     </div>
 
     <script>
         const LIFF_ID = "2008808827-DzeTt84n"; 
-        // 👇 已經幫您換上最新的網址了
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
-
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec"; // 記得確認網址
+        
         let userProfile = null;
         let isOnline = false;
 
         async function main() {
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                if (!liff.isLoggedIn()) { liff.login(); return; }
-                userProfile = await liff.getProfile();
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            userProfile = await liff.getProfile();
+            
+            // 渲染頭像
+            document.getElementById("head-img").src = userProfile.pictureUrl;
+            document.getElementById("head-name").innerText = userProfile.displayName;
+
+            // 讀取資料
+            loadMyData();
+            loadMyOrders();
+        }
+
+        // 切換分頁
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // 讀取個人資料 (填入表單)
+        async function loadMyData() {
+            const res = await fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "getProfile", userId: userProfile.userId })
+            });
+            const data = await res.json();
+            
+            if (data.notFound) {
+                document.getElementById("head-status").innerText = "新夥伴，請填寫資料";
+            } else {
+                // 填入表單
+                document.getElementById("edit-rate").value = data.rate;
+                document.getElementById("edit-tags").value = data.tags;
+                document.getElementById("edit-intro").value = data.intro;
                 
-                document.getElementById("profile").innerHTML = `
-                    <div class="card">
-                        <img src="${userProfile.pictureUrl}" class="profile-img">
-                        <h3>${userProfile.displayName}</h3>
-                        <p>歡迎回來工作</p>
+                // 設定狀態
+                isOnline = (data.status === "Online");
+                renderStatusBtn();
+            }
+        }
+
+        // 讀取訂單列表
+        async function loadMyOrders() {
+            const res = await fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "getMyOrders", userName: userProfile.displayName })
+            });
+            const orders = await res.json();
+            
+            const listDiv = document.getElementById("order-list");
+            listDiv.innerHTML = "";
+
+            if (orders.length === 0) {
+                listDiv.innerHTML = "<p style='text-align:center; color:#666; padding:20px;'>目前沒有新訂單</p>";
+                return;
+            }
+
+            orders.forEach(o => {
+                // 格式化時間
+                const date = new Date(o.time);
+                const timeStr = (date.getMonth()+1) + "/" + date.getDate() + " " + date.getHours() + ":" + (date.getMinutes()<10?'0':'') + date.getMinutes();
+                
+                listDiv.innerHTML += `
+                    <div class="order-item">
+                        <div class="order-time">📅 ${timeStr}</div>
+                        <div class="order-detail">
+                            <span>家長：${o.parent}</span>
+                            <span style="color:#06c755">$${o.price}</span>
+                        </div>
+                        <div style="margin-top:5px; display:flex; justify-content:space-between;">
+                             <span class="order-status">${o.status}</span>
+                        </div>
                     </div>
                 `;
-                
-                if (!liff.isInClient()) {
-                    document.getElementById("btn-scan").disabled = true;
-                    document.getElementById("scan-status").innerText = "⚠️ 掃碼功能需在 LINE App 內使用";
-                }
-            } catch (err) {
-                alert("初始化錯誤：" + err);
-            }
+            });
         }
 
+        // 儲存資料
+        async function saveProfile() {
+            const btn = document.querySelector(".btn-primary");
+            btn.innerText = "儲存中...";
+            btn.disabled = true;
+
+            const data = {
+                action: "updateProfile",
+                userId: userProfile.userId,
+                displayName: userProfile.displayName,
+                pictureUrl: userProfile.pictureUrl,
+                rate: document.getElementById("edit-rate").value,
+                tags: document.getElementById("edit-tags").value,
+                intro: document.getElementById("edit-intro").value
+            };
+
+            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
+            alert("✅ 資料已更新");
+            btn.innerText = "儲存修改";
+            btn.disabled = false;
+        }
+
+        // 切換狀態
         function toggleStatus() {
             isOnline = !isOnline;
-            const btn = document.getElementById("btn-toggle");
-            const txt = document.getElementById("status-text");
+            renderStatusBtn();
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "toggleStatus", userId: userProfile.userId, status: isOnline ? "Online" : "Offline" })
+            });
+        }
 
+        function renderStatusBtn() {
+            const btn = document.getElementById("status-toggle");
+            const txt = document.getElementById("head-status");
             if (isOnline) {
-                btn.className = "toggle-btn online";
-                btn.innerText = "🟢 正在線上 (點此下線)";
-                txt.innerText = "目前狀態：線上 (家長可以預約)";
-                updateServer("Online");
+                btn.className = "toggle-btn is-online";
+                btn.innerText = "🟢 目前線上接單中 (點此休息)";
+                txt.innerText = "狀態：工作中 💪";
             } else {
-                btn.className = "toggle-btn offline";
-                btn.innerText = "🔴 點此上線接單";
-                txt.innerText = "目前狀態：離線 (家長看不到你)";
-                updateServer("Offline");
+                btn.className = "toggle-btn is-offline";
+                btn.innerText = "🔴 目前離線中 (點此上線)";
+                txt.innerText = "狀態：休息中 💤";
             }
         }
-
-        function updateServer(status) {
-            fetch(SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify({
-                    action: "toggleStatus",
-                    userId: userProfile.userId,
-                    status: status
-                })
-            });
-        }
-
-        function handleGPS() {
-            const statusBox = document.getElementById("gps-status");
-            const btn = document.getElementById("btn-gps");
-            if (!navigator.geolocation) {
-                statusBox.innerText = "此裝置不支援 GPS"; return;
-            }
-            btn.disabled = true; btn.innerText = "定位中...";
-            
-            navigator.geolocation.getCurrentPosition((pos) => {
-                const loc = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
-                statusBox.innerText = `✅ 定位成功：${loc}`;
-                sendAction("checkin", loc);
-                btn.innerText = "已打卡";
-            }, (err) => {
-                statusBox.innerText = "定位失敗"; btn.disabled = false;
-            });
-        }
-
+        
+        // 掃碼功能 (保留)
         async function handleScan() {
-            const statusBox = document.getElementById("scan-status");
-            try {
-                const result = await liff.scanCodeV2();
-                if (result.value) {
-                    statusBox.innerText = "✅ 掃描成功";
-                    sendAction("scan", "代碼:" + result.value);
-                    alert("掃描成功！");
-                }
-            } catch (err) {
-                statusBox.innerText = "掃描取消";
-            }
-        }
-
-        function sendAction(actionType, detail) {
-            const data = {
-                action: actionType, 
-                userName: userProfile.displayName,
-                detail: detail
-            };
-            fetch(SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify(data)
-            });
+            if (!liff.isInClient()) { alert("請在 LINE App 使用"); return; }
+            const res = await liff.scanCodeV2();
+            if (res.value) alert("掃描到：" + res.value);
         }
 
         main();
