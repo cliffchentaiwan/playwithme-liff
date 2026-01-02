@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成為陪玩員</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f8f9fa; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #06c755; color: white; border: none; border-radius: 25px; font-size: 16px; font-weight: bold; margin-top: 20px; }
+        .avatar { width: 80px; height: 80px; border-radius: 50%; display: block; margin: 0 auto 20px; }
+    </style>
+</head>
+<body>
+    <div id="loading">讀取資料中...</div>
+    <div id="form-container" style="display:none;">
+        <img id="my-avatar" class="avatar" src="">
+        <h2 style="text-align:center;" id="my-name"></h2>
+        
+        <div class="form-group">
+            <label>設定您的費率 (每小時)</label>
+            <input type="number" id="rate" placeholder="例如：350">
+        </div>
+        <div class="form-group">
+            <label>專長標籤 (用逗號隔開)</label>
+            <input type="text" id="tags" placeholder="例如：#畫畫, #鋼琴, #伴讀">
+        </div>
+        <div class="form-group">
+            <label>自我介紹 (簡單一句話)</label>
+            <textarea id="intro" rows="3" placeholder="例如：我是幼教系學生，喜歡講故事..."></textarea>
+        </div>
+        <button onclick="register()">確認註冊 / 更新資料</button>
+    </div>
+
+    <script>
+        const LIFF_ID = "2008808827-DzeTt84n"; 
+        const SCRIPT_URL = "YOUR_SCRIPT_URL_HERE"; // ⚠️ 請換成您的 Google Script 網址
+
+        let profile = null;
+
+        async function main() {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            profile = await liff.getProfile();
+            
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("form-container").style.display = "block";
+            document.getElementById("my-avatar").src = profile.pictureUrl;
+            document.getElementById("my-name").innerText = "Hi, " + profile.displayName;
+        }
+
+        function register() {
+            const rate = document.getElementById("rate").value;
+            const tags = document.getElementById("tags").value;
+            const intro = document.getElementById("intro").value;
+
+            if(!rate || !intro) { alert("請填寫完整資訊"); return; }
+
+            const data = {
+                action: "register",
+                userId: profile.userId,
+                displayName: profile.displayName,
+                pictureUrl: profile.pictureUrl,
+                rate: rate,
+                tags: tags,
+                intro: intro
+            };
+
+            // 送出資料
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify(data)
+            }).then(() => {
+                alert("✅ 註冊成功！您現在可以在工作台按「上線」接單了。");
+                liff.closeWindow();
+            }).catch(err => alert("錯誤：" + err));
+        }
+        main();
+    </script>
+</body>
+</html>
