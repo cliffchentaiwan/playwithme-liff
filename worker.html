@@ -1,29 +1,86 @@
-<style>
-        /* 新增開關樣式 */
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>陪玩員工作台</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #333; color: white; padding: 20px; text-align: center; padding-bottom: 60px; }
+        .card { background: #444; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        h2 { margin-top: 0; color: #06c755; font-size: 20px; }
+        p { color: #ccc; font-size: 14px; }
+        .btn { width: 100%; padding: 15px; font-size: 16px; border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; font-weight: bold; transition: 0.2s; }
+        .btn:disabled { background-color: #666; cursor: not-allowed; }
+        .btn-gps { background-color: #2196F3; color: white; }
+        .btn-scan { background-color: #06c755; color: white; }
+        
         .status-toggle { margin-bottom: 20px; padding: 20px; background: #222; border-radius: 15px; }
         .toggle-btn { padding: 10px 30px; border-radius: 30px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; }
         .offline { background-color: #555; color: #aaa; }
         .online { background-color: #06c755; color: white; box-shadow: 0 0 15px rgba(6, 199, 85, 0.5); }
+        
+        .status-box { background: #222; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 13px; color: #aaa; text-align: left; min-height: 20px; word-break: break-all; }
+        .profile-img { width: 70px; height: 70px; border-radius: 50%; border: 3px solid #06c755; margin-bottom: 10px; }
     </style>
+</head>
+<body>
 
-<div class="status-toggle">
+    <div id="profile">
+        <div class="card">
+            <p>正在讀取身份...</p>
+        </div>
+    </div>
+
+    <div class="status-toggle">
         <h3>🟢 接單狀態</h3>
         <p id="status-text">目前狀態：離線 (家長看不到你)</p>
         <button id="btn-toggle" class="toggle-btn offline" onclick="toggleStatus()">🔴 點此上線接單</button>
     </div>
 
+    <div class="card">
+        <h2>📍 抵達打卡</h2>
+        <p>到達指定地點後，請點擊回報。</p>
+        <button class="btn btn-gps" id="btn-gps" onclick="handleGPS()">傳送 GPS 位置</button>
+        <div class="status-box" id="gps-status">等待操作...</div>
+    </div>
+
+    <div class="card">
+        <h2>📸 完工掃碼</h2>
+        <p>請掃描家長手機上的 QR Code 以結案。</p>
+        <button class="btn btn-scan" id="btn-scan" onclick="handleScan()">啟動相機掃描</button>
+        <div class="status-box" id="scan-status">等待操作...</div>
+    </div>
+
     <script>
         const LIFF_ID = "2008808827-DzeTt84n"; 
-        const SCRIPT_URL = "YOUR_SCRIPT_URL_HERE"; // ⚠️ 請換成您的網址
+        // 👇 已經幫您換上最新的網址了
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
 
         let userProfile = null;
         let isOnline = false;
 
         async function main() {
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) { liff.login(); return; }
-            userProfile = await liff.getProfile();
-            // 這裡可以加載目前的狀態，為求簡化先預設為 Offline
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                userProfile = await liff.getProfile();
+                
+                document.getElementById("profile").innerHTML = `
+                    <div class="card">
+                        <img src="${userProfile.pictureUrl}" class="profile-img">
+                        <h3>${userProfile.displayName}</h3>
+                        <p>歡迎回來工作</p>
+                    </div>
+                `;
+                
+                if (!liff.isInClient()) {
+                    document.getElementById("btn-scan").disabled = true;
+                    document.getElementById("scan-status").innerText = "⚠️ 掃碼功能需在 LINE App 內使用";
+                }
+            } catch (err) {
+                alert("初始化錯誤：" + err);
+            }
         }
 
         function toggleStatus() {
@@ -54,7 +111,52 @@
                 })
             });
         }
-        
-        // ... (保留原本的 GPS 和 掃碼函式 handleGPS, handleScan, 但記得 fetch 的 action 要改成 checkin/scan 配合後端)
+
+        function handleGPS() {
+            const statusBox = document.getElementById("gps-status");
+            const btn = document.getElementById("btn-gps");
+            if (!navigator.geolocation) {
+                statusBox.innerText = "此裝置不支援 GPS"; return;
+            }
+            btn.disabled = true; btn.innerText = "定位中...";
+            
+            navigator.geolocation.getCurrentPosition((pos) => {
+                const loc = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+                statusBox.innerText = `✅ 定位成功：${loc}`;
+                sendAction("checkin", loc);
+                btn.innerText = "已打卡";
+            }, (err) => {
+                statusBox.innerText = "定位失敗"; btn.disabled = false;
+            });
+        }
+
+        async function handleScan() {
+            const statusBox = document.getElementById("scan-status");
+            try {
+                const result = await liff.scanCodeV2();
+                if (result.value) {
+                    statusBox.innerText = "✅ 掃描成功";
+                    sendAction("scan", "代碼:" + result.value);
+                    alert("掃描成功！");
+                }
+            } catch (err) {
+                statusBox.innerText = "掃描取消";
+            }
+        }
+
+        function sendAction(actionType, detail) {
+            const data = {
+                action: actionType, 
+                userName: userProfile.displayName,
+                detail: detail
+            };
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify(data)
+            });
+        }
+
         main();
     </script>
+</body>
+</html>
