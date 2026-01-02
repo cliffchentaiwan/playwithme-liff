@@ -3,69 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>為人母 - 預約服務</title>
+    <title>預約陪玩</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        /* 基礎設定 */
-        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; padding-bottom: 80px; }
-        .header { background-color: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
-        .header h1 { margin: 0; font-size: 20px; color: #333; }
-        .header p { margin: 5px 0 0; color: #666; font-size: 14px; }
-        .container { padding: 15px; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; padding-bottom: 80px; }
         
-        /* 卡片樣式 */
-        .card { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .card-img { width: 100%; height: 200px; object-fit: cover; }
-        .card-body { padding: 15px; }
-        .name { font-size: 18px; font-weight: bold; color: #333; }
-        .price { font-size: 18px; font-weight: bold; color: #06c755; float: right; }
-        .btn-book { background-color: #06c755; color: white; border: none; padding: 10px 20px; border-radius: 20px; width: 100%; margin-top: 10px; font-size: 16px; font-weight: bold; }
+        /* 精簡化：移除 Header，只留一個簡單的標題 */
+        h2 { margin: 10px 0 20px; font-size: 18px; color: #444; }
+
+        /* 橫式卡片設計 (Item 4) */
+        .card { 
+            background: white; border-radius: 12px; overflow: hidden; margin-bottom: 15px; 
+            display: flex; flex-direction: row; /* 變橫向 */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+            height: 120px;
+        }
+        .card-img { width: 120px; height: 100%; object-fit: cover; background: #eee; }
+        .card-body { padding: 12px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
         
-        /* 成功後的 QR Code 區塊 */
-        #success-view { display: none; text-align: center; padding-top: 30px; }
-        .qr-box { background: white; padding: 20px; border-radius: 10px; display: inline-block; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .qr-desc { color: #666; margin-top: 15px; line-height: 1.6; }
-        .big-check { font-size: 50px; color: #06c755; margin-bottom: 10px; }
+        .name { font-size: 16px; font-weight: bold; color: #333; }
+        .tags { color: #888; font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 150px; }
+        .price { color: #06c755; font-weight: bold; font-size: 16px; }
+        .btn-book { 
+            background-color: #06c755; color: white; border: none; 
+            padding: 6px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; 
+            align-self: flex-end; /* 按鈕靠右下 */
+        }
+        #loading { text-align: center; color: #999; margin-top: 50px; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>為人母 MomDay</h1>
-        <p>為您媒合最專業的陪玩夥伴</p>
-    </div>
-
-    <div class="container" id="list-view">
-        <p id="loading">載入中...</p>
-    </div>
-
-    <div class="container" id="success-view">
-        <div class="big-check">✅</div>
-        <h2>預約成功！</h2>
-        <p class="qr-desc">
-            請截圖保存此畫面。<br>
-            當陪玩服務結束時，<br>
-            <b>請出示此 QR Code 給陪玩員掃描。</b>
-        </p>
-        
-        <div class="qr-box">
-            <img id="qr-img" src="" width="200" height="200">
-        </div>
-
-        <button class="btn-book" onclick="location.reload()" style="background-color:#666; margin-top:30px;">
-            返回首頁
-        </button>
-    </div>
+    <h2>🔥 在線陪玩員</h2>
+    <div id="loading">正在搜尋附近的夥伴...</div>
+    <div id="list-container"></div>
 
     <script>
         const LIFF_ID = "2008808827-DzeTt84n"; 
-        const API_URL = "https://script.google.com/macros/s/AKfycbwfs3NTl9VmGiqcZZ_bXjwOFvOJsyCeKWiYSuAGC3Q9BNYxk1fmxktF-LkNAzvP94Zk/exec";
-
-        const companions = [
-            { id: 1, name: "小美姐姐", price: 350, img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80" },
-            { id: 2, name: "Jason 哥哥", price: 400, img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=600&q=80" },
-            { id: 3, name: "愛麗絲", price: 500, img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=600&q=80" }
-        ];
+        const SCRIPT_URL = "YOUR_SCRIPT_URL_HERE"; // ⚠️ 務必換成新網址
 
         let userProfile = null;
 
@@ -73,55 +48,57 @@
             await liff.init({ liffId: LIFF_ID });
             if (!liff.isLoggedIn()) { liff.login(); return; }
             userProfile = await liff.getProfile();
-            renderList();
-        }
-
-        function renderList() {
-            const listDiv = document.getElementById("list-view");
-            document.getElementById("loading").style.display = "none";
             
-            companions.forEach(item => {
-                const card = document.createElement("div");
-                card.className = "card";
-                card.innerHTML = `
-                    <img src="${item.img}" class="card-img">
-                    <div class="card-body">
-                        <span class="name">${item.name}</span>
-                        <span class="price">$${item.price}</span>
-                        <br><br>
-                        <button class="btn-book" onclick="book('${item.name}', ${item.price})">立即預約</button>
-                    </div>
-                `;
-                listDiv.appendChild(card);
-            });
+            loadWorkers(); // 讀取資料
         }
 
+        async function loadWorkers() {
+            try {
+                // 呼叫 doGet 取得線上名單
+                const res = await fetch(SCRIPT_URL); 
+                const workers = await res.json();
+                
+                const container = document.getElementById("list-container");
+                document.getElementById("loading").style.display = "none";
+                container.innerHTML = ""; // 清空
+
+                if (workers.length === 0) {
+                    container.innerHTML = "<p style='text-align:center;color:#999;'>目前沒有人上線，請稍後再試。</p>";
+                    return;
+                }
+
+                workers.forEach(w => {
+                    const card = document.createElement("div");
+                    card.className = "card";
+                    card.innerHTML = `
+                        <img src="${w.img}" class="card-img">
+                        <div class="card-body">
+                            <div>
+                                <div class="name">${w.name}</div>
+                                <div class="tags">${w.tags}</div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span class="price">$${w.price} <small>/hr</small></span>
+                                <button class="btn-book" onclick="book('${w.name}', ${w.price})">預約</button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch (err) {
+                document.getElementById("loading").innerText = "讀取失敗";
+            }
+        }
+
+        // 預約功能 (Item 3 邏輯)
         function book(name, price) {
-            if(!confirm(`確定預約 ${name} 嗎？`)) return;
-
-            // 1. 隱藏列表，顯示載入中
-            document.getElementById("list-view").style.display = "none";
+            // 未來這裡可以改成彈窗 (Modal)，目前先維持簡單確認
+            if(!confirm(`要預約 ${name} 嗎？`)) return;
             
-            // 2. 送資料到 Google Sheet
-            const data = { userName: userProfile.displayName, companion: name, price: price };
-            fetch(API_URL, {
-                method: "POST", body: JSON.stringify(data), headers: { "Content-Type": "text/plain" }
-            }); // 不等待回應，直接顯示成功，優化體驗
-
-            // 3. 產生結案代碼 (這裡簡單用 時間+名字 當密碼)
-            const code = "ORDER-" + Date.now().toString().slice(-4); 
-            
-            // 4. 顯示成功畫面 + QR Code
-            showSuccess(code);
-        }
-
-        function showSuccess(code) {
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${code}`;
-            document.getElementById("qr-img").src = qrUrl;
-            document.getElementById("success-view").style.display = "block";
-            
-            // 發送訊息
-            liff.sendMessages([{ type: 'text', text: `✅ 我已預約成功！\n結案代碼：${code}` }]);
+            const data = { action: "book", userName: userProfile.displayName, companion: name, price: price };
+            fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
+            alert("✅ 預約申請已送出！");
         }
 
         main();
