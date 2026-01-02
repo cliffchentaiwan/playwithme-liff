@@ -31,9 +31,9 @@
         .btn-del { color: #d32f2f; font-weight: bold; cursor: pointer; padding: 5px; }
 
         /* 底部導覽列 */
-        .tab-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #eee; display: flex; padding-bottom: 20px; z-index: 100; }
+        .tab-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #eee; display: flex; padding-bottom: 20px; z-index: 999; }
         .tab-item { flex: 1; text-align: center; padding: 10px; color: #999; cursor: pointer; font-size: 12px; }
-        .tab-item.active-tab { color: #06c755; font-weight: bold; }
+        .tab-item.active-tab { color: #06c755; font-weight: bold; border-top: 2px solid #06c755; }
         .tab-icon { font-size: 20px; display: block; margin-bottom: 2px; }
 
         /* 訂單卡片 */
@@ -42,8 +42,8 @@
         .order-card.accepted { border-left-color: #06c755; }
         .order-header { display: flex; justify-content: space-between; font-size: 14px; color: #666; margin-bottom: 10px; }
         .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-accept { flex: 1; background: #06c755; color: white; border: none; padding: 8px; border-radius: 5px; font-weight: bold; }
-        .btn-reject { flex: 1; background: #ff5252; color: white; border: none; padding: 8px; border-radius: 5px; font-weight: bold; }
+        .btn-accept { flex: 1; background: #06c755; color: white; border: none; padding: 8px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .btn-reject { flex: 1; background: #ff5252; color: white; border: none; padding: 8px; border-radius: 5px; font-weight: bold; cursor: pointer; }
         .btn-main { width: 100%; padding: 14px; background-color: #06c755; color: white; border: none; border-radius: 30px; font-size: 16px; font-weight: bold; margin-top: 20px; cursor: pointer; }
 
         .page { display: none; }
@@ -53,7 +53,8 @@
 <body>
 
     <div id="loading" class="page active" style="text-align:center; padding-top: 50px;">
-        <p>🔄 讀取中...</p>
+        <p>🔄 系統讀取中...</p>
+        <p style="font-size:12px; color:#999;">(若卡住太久，請確認網路或重新整理)</p>
     </div>
 
     <div id="tab-profile" class="page">
@@ -129,6 +130,7 @@
 
     <script>
         const LIFF_ID = "2008808827-DzeTt84n"; 
+        // 👇 您的 Script 網址
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec"; 
 
         let userProfile = null;
@@ -136,12 +138,169 @@
         let currentUploadType = "";
 
         async function main() {
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) { liff.login(); return; }
-            userProfile = await liff.getProfile();
-            checkLogin();
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                userProfile = await liff.getProfile();
+                
+                checkLogin(); // 啟動後端檢查
+            } catch (err) {
+                alert("LIFF 錯誤：" + err);
+                // 即使錯誤，也要強制顯示 UI，避免卡死
+                document.getElementById("loading").classList.remove("active");
+                document.getElementById("tab-profile").classList.add("active");
+            }
         }
 
         async function checkLogin() {
             try {
-                const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "login", userId
+                const res = await fetch(SCRIPT_URL, { 
+                    method: "POST", 
+                    body: JSON.stringify({ action: "login", userId: userProfile.userId }) 
+                });
+                
+                // 檢查是否回傳了 HTML 錯誤頁面 (權限錯誤常見)
+                const text = await res.text();
+                if (text.includes("<!DOCTYPE html>")) {
+                    alert("⚠️ 系統錯誤：後端權限設定不正確。\n請確認 Google Script 部署為「任何人」可存取。");
+                    throw new Error("Backend Permission Error");
+                }
+
+                const result = JSON.parse(text); // 解析 JSON
+
+                // 無論如何，都要關閉 Loading，開啟主畫面
+                document.getElementById("loading").classList.remove("active");
+                document.getElementById("tab-profile").classList.add("active");
+                
+                document.getElementById("form-avatar").src = userProfile.pictureUrl;
+                document.getElementById("form-name").innerText = userProfile.displayName;
+
+                if (result.isRegistered) {
+                    const d = result.data;
+                    document.getElementById("inp-rate").value = d.rate;
+                    document.getElementById("inp-tags").value = d.tags;
+                    document.getElementById("inp-intro").value = d.intro;
+                    document.getElementById("inp-bank").value = d.bank;
+                    document.getElementById("inp-online-status").value = d.status;
+                    
+                    if(d.verified === "Verified") {
+                        document.getElementById("form-status").innerText = "已認證"; document.getElementById("form-status").className = "badge badge-green";
+                    } else if (d.verified === "Pending Review") {
+                        document.getElementById("form-status").innerText = "審核中"; document.getElementById("form-status").className = "badge badge-orange";
+                    }
+                    if(d.docFront) updateDocUI('front', d.docFront);
+                    if(d.docBack) updateDocUI('back', d.docBack);
+                    if(d.docPolice) updateDocUI('police', d.docPolice);
+                    
+                    // 防呆：如果 J 欄資料壞了，不要讓程式當掉，而是給空陣列
+                    try { 
+                        mySchedule = JSON.parse(d.schedule); 
+                    } catch(e) { 
+                        console.log("排程資料格式有誤，已重置");
+                        mySchedule=[]; 
+                    }
+                    renderSchedule();
+                } else {
+                    // 新用戶，給予提示
+                    alert("歡迎加入！請填寫資料並按儲存。");
+                }
+            } catch (err) { 
+                alert("連線錯誤：" + err + "\n\n請嘗試重新整理。");
+                // 發生錯誤時，強制進入主畫面，讓用戶至少能看到介面
+                document.getElementById("loading").classList.remove("active");
+                document.getElementById("tab-profile").classList.add("active");
+            }
+        }
+
+        // --- 分頁切換 (確保切換時，舊的分頁隱藏) ---
+        function switchTab(tab) {
+            // 隱藏所有分頁
+            document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+            // 移除導覽列激活狀態
+            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active-tab'));
+            
+            if (tab === 'profile') {
+                document.getElementById('tab-profile').classList.add('active');
+                document.querySelectorAll('.tab-item')[0].classList.add('active-tab');
+            } else {
+                document.getElementById('tab-orders').classList.add('active');
+                document.querySelectorAll('.tab-item')[1].classList.add('active-tab');
+                loadOrders(); // 讀取訂單
+            }
+        }
+
+        async function loadOrders() {
+            const container = document.getElementById("order-list");
+            container.innerHTML = '<p style="text-align:center; color:#999;">重新整理中...</p>';
+            try {
+                const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getMyOrders", workerName: userProfile.displayName }) });
+                const result = await res.json();
+                container.innerHTML = "";
+                if (!result.orders || result.orders.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">目前沒有訂單</p>';
+                    return;
+                }
+                result.orders.forEach(order => {
+                    let statusBadge = `<span style="color:orange">待確認</span>`;
+                    let buttons = `<button class="btn-reject" onclick="updateOrder(${order.row}, '已拒絕')">拒絕</button><button class="btn-accept" onclick="updateOrder(${order.row}, '已接單')">接單</button>`;
+                    if (order.status === '已接單') { statusBadge = `<span style="color:green">✅ 已接單</span>`; buttons = `<button style="width:100%;background:#eee;border:none;padding:8px;border-radius:5px;" disabled>等待服務開始</button>`; }
+                    else if (order.status === '已拒絕') { statusBadge = `<span style="color:red">❌ 已拒絕</span>`; buttons = ``; }
+                    
+                    const card = document.createElement("div");
+                    card.className = `order-card ${order.status === '待確認' ? 'pending' : 'accepted'}`;
+                    card.innerHTML = `<div class="order-header"><span>📅 ${new Date(order.time).toLocaleDateString()}</span>${statusBadge}</div>
+                        <div style="font-size:16px; font-weight:bold;">👶 ${order.child}</div>
+                        <div style="font-size:14px; margin:5px 0;">家長：${order.parent}</div>
+                        <div style="background:#f9f9f9; padding:8px; font-size:13px; color:#555; border-radius:5px;">備註：${order.note || "無"}</div>
+                        <div style="text-align:right; font-weight:bold; color:#06c755; margin:10px 0;">$${order.price}</div>
+                        <div class="btn-group">${buttons}</div>`;
+                    container.appendChild(card);
+                });
+            } catch (err) { container.innerHTML = "載入失敗：" + err; }
+        }
+
+        async function updateOrder(row, status) {
+            if(!confirm(`確定要變更為「${status}」嗎？`)) return;
+            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "updateOrderStatus", row: row, newStatus: status }) });
+            alert("更新成功"); loadOrders();
+        }
+
+        function addSlot() {
+            const slot = `${document.getElementById("sel-day").value} ${document.getElementById("sel-time").value}`;
+            if (!mySchedule.includes(slot)) { mySchedule.push(slot); mySchedule.sort(); renderSchedule(); }
+        }
+        function removeSlot(idx) { mySchedule.splice(idx, 1); renderSchedule(); }
+        function renderSchedule() {
+            const c = document.getElementById("schedule-list"); c.innerHTML = "";
+            mySchedule.forEach((s, i) => c.innerHTML += `<div class="time-slot"><span>🕒 ${s}</span><span class="btn-del" onclick="removeSlot(${i})">✕</span></div>`);
+        }
+        function triggerUpload(type) { currentUploadType = type; document.getElementById("file-input").click(); }
+        function handleFileSelect() {
+            const file = document.getElementById("file-input").files[0];
+            if (!file) return;
+            const btn = document.querySelector(`button[onclick="triggerUpload('${currentUploadType}')"]`);
+            btn.innerText = "..."; btn.disabled = true;
+            const r = new FileReader();
+            r.readAsDataURL(file);
+            r.onload = async function() {
+                try {
+                    const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "uploadDoc", userId: userProfile.userId, docType: currentUploadType, fileName: file.name, mimeType: file.type, fileData: r.result.split(',')[1] }) });
+                    const result = await res.json();
+                    if(result.success) { alert("上傳成功"); updateDocUI(currentUploadType, result.url); } else alert("失敗");
+                } catch(e) { alert("錯誤"); } finally { btn.innerText = "上傳"; btn.disabled = false; }
+            };
+        }
+        function updateDocUI(type, url) {
+            document.getElementById("icon-"+type).className="check-icon done"; document.getElementById("icon-"+type).innerText="✔";
+            const l = document.getElementById("link-"+type); l.href=url; l.style.display="inline-block";
+        }
+        async function saveProfile() {
+            const btn = document.querySelector(".btn-main"); btn.innerText="儲存中..."; btn.disabled=true;
+            const data = { action: "updateProfile", userId: userProfile.userId, name: userProfile.displayName, photo: userProfile.pictureUrl, rate: document.getElementById("inp-rate").value, tags: document.getElementById("inp-tags").value, intro: document.getElementById("inp-intro").value, bank: document.getElementById("inp-bank").value, status: document.getElementById("inp-online-status").value, schedule: JSON.stringify(mySchedule) };
+            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
+            alert("✅ 資料更新成功"); btn.innerText="儲存更新"; btn.disabled=false;
+        }
+        main();
+    </script>
+</body>
+</html>
