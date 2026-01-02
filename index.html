@@ -8,13 +8,11 @@
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; padding-bottom: 80px; }
         
-        /* 精簡化：移除 Header，只留一個簡單的標題 */
         h2 { margin: 10px 0 20px; font-size: 18px; color: #444; }
 
-        /* 橫式卡片設計 (Item 4) */
         .card { 
             background: white; border-radius: 12px; overflow: hidden; margin-bottom: 15px; 
-            display: flex; flex-direction: row; /* 變橫向 */
+            display: flex; flex-direction: row; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
             height: 120px;
         }
@@ -27,7 +25,7 @@
         .btn-book { 
             background-color: #06c755; color: white; border: none; 
             padding: 6px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; 
-            align-self: flex-end; /* 按鈕靠右下 */
+            align-self: flex-end; 
         }
         #loading { text-align: center; color: #999; margin-top: 50px; }
     </style>
@@ -40,29 +38,34 @@
 
     <script>
         const LIFF_ID = "2008808827-DzeTt84n"; 
-        const SCRIPT_URL = "YOUR_SCRIPT_URL_HERE"; // ⚠️ 務必換成新網址
+        // 👇 已經幫您換上最新的網址了
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
 
         let userProfile = null;
 
         async function main() {
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) { liff.login(); return; }
-            userProfile = await liff.getProfile();
-            
-            loadWorkers(); // 讀取資料
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                userProfile = await liff.getProfile();
+                
+                loadWorkers(); 
+            } catch (err) {
+                document.getElementById("loading").innerText = "初始化失敗";
+            }
         }
 
         async function loadWorkers() {
             try {
-                // 呼叫 doGet 取得線上名單
+                // 呼叫 Google Script 取得名單
                 const res = await fetch(SCRIPT_URL); 
                 const workers = await res.json();
                 
                 const container = document.getElementById("list-container");
                 document.getElementById("loading").style.display = "none";
-                container.innerHTML = ""; // 清空
+                container.innerHTML = ""; 
 
-                if (workers.length === 0) {
+                if (!workers || workers.length === 0) {
                     container.innerHTML = "<p style='text-align:center;color:#999;'>目前沒有人上線，請稍後再試。</p>";
                     return;
                 }
@@ -71,15 +74,15 @@
                     const card = document.createElement("div");
                     card.className = "card";
                     card.innerHTML = `
-                        <img src="${w.img}" class="card-img">
+                        <img src="${w.photo}" class="card-img">
                         <div class="card-body">
                             <div>
                                 <div class="name">${w.name}</div>
                                 <div class="tags">${w.tags}</div>
                             </div>
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span class="price">$${w.price} <small>/hr</small></span>
-                                <button class="btn-book" onclick="book('${w.name}', ${w.price})">預約</button>
+                                <span class="price">$${w.rate} <small>/hr</small></span>
+                                <button class="btn-book" onclick="book('${w.name}', ${w.rate})">預約</button>
                             </div>
                         </div>
                     `;
@@ -87,13 +90,12 @@
                 });
 
             } catch (err) {
-                document.getElementById("loading").innerText = "讀取失敗";
+                console.error(err);
+                document.getElementById("loading").innerText = "讀取資料失敗，請檢查網路";
             }
         }
 
-        // 預約功能 (Item 3 邏輯)
         function book(name, price) {
-            // 未來這裡可以改成彈窗 (Modal)，目前先維持簡單確認
             if(!confirm(`要預約 ${name} 嗎？`)) return;
             
             const data = { action: "book", userName: userProfile.displayName, companion: name, price: price };
