@@ -13,7 +13,6 @@
         .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
         .badge-gray { background: #eee; color: #666; }
         .badge-green { background: #e8f5e9; color: #06c755; }
-        .badge-red { background: #ffebee; color: #d32f2f; }
         
         label { display: block; font-weight: bold; margin: 15px 0 5px; font-size: 14px; color: #555; }
         input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; background: #fafafa; font-size: 15px; }
@@ -22,8 +21,10 @@
         .check-status { display: flex; align-items: center; }
         .check-icon { margin-right: 10px; font-size: 18px; color: #ddd; width: 24px; text-align: center;}
         .check-icon.done { color: #06c755; }
-        .btn-upload { background: #06c755; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold; }
-        
+        /* 上傳按鈕樣式優化 */
+        .btn-upload { background: #06c755; color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.3s; }
+        .btn-upload:disabled { background: #ccc; cursor: not-allowed; }
+
         .time-slot { background: #e3f2fd; color: #1565c0; padding: 10px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
         .btn-del { color: #d32f2f; font-weight: bold; cursor: pointer; padding: 5px; }
         
@@ -56,7 +57,7 @@
             <p>您的資料已提交，平台管理員正在審核中。</p>
             <p style="font-size:13px; color:#666;">審核通過後，將開放「銀行帳號」設定與「接單功能」。</p>
             <hr>
-            <p style="font-size:12px; color:#999;">請確保您已上傳：<br>身分證正反面、良民證</p>
+            <p style="font-size:12px; color:#999;">請確保您已上傳以下文件：</p>
             <button onclick="location.reload()" style="margin-top:20px; padding:10px 20px; border:1px solid #ddd; background:white; border-radius:20px;">🔄 重新整理檢查狀態</button>
         </div>
         
@@ -93,7 +94,6 @@
             <label>時薪 (NT$)</label><input type="number" id="inp-rate" placeholder="350">
             <label>專長標籤</label><input type="text" id="inp-tags" placeholder="#畫畫 #鋼琴">
             <label>自我介紹</label><textarea id="inp-intro" rows="3"></textarea>
-            
             <label style="color:#06c755;">💰 銀行帳號 (撥款用)</label>
             <input type="text" id="inp-bank" placeholder="銀行代碼+帳號">
         </div>
@@ -154,13 +154,9 @@
                 document.getElementById("loading").classList.remove("active");
 
                 if (!result.isRegistered) {
-                    // 未註冊 -> 自動註冊 (進入審核狀態)
                     registerNewUser();
                 } else {
-                    // 已註冊 -> 檢查狀態
                     const d = result.data;
-                    
-                    // 填入資料 (不管是審核中還是通過，都要能看到已填的資料)
                     document.getElementById("form-avatar").src = d.photo;
                     document.getElementById("form-name").innerText = d.name;
                     document.getElementById("inp-rate").value = d.rate;
@@ -170,19 +166,15 @@
                     document.getElementById("inp-online-status").value = d.status;
                     try { mySchedule = JSON.parse(d.schedule); } catch(e){ mySchedule=[]; }
                     
-                    // 更新證件上傳狀態圖示
                     if(d.docFront) document.getElementById("r-icon-front").className="check-icon done";
                     if(d.docBack) document.getElementById("r-icon-back").className="check-icon done";
                     if(d.docPolice) document.getElementById("r-icon-police").className="check-icon done";
 
-                    // 🔥 關鍵分流邏輯
                     if (d.verified === "Verified") {
-                        // 通過審核 -> 進入正式後台
                         document.getElementById("tab-profile").classList.add("active");
                         document.getElementById("main-tab-bar").classList.remove("hidden");
                         renderSchedule();
                     } else {
-                        // 未通過 (Pending) -> 顯示審核畫面
                         document.getElementById("review-pending").classList.add("active");
                     }
                 }
@@ -190,7 +182,6 @@
         }
 
         async function registerNewUser() {
-            // 自動呼叫後端註冊，然後顯示審核畫面
             await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ 
                 action: "updateProfile", userId: userProfile.userId, 
                 name: userProfile.displayName, photo: userProfile.pictureUrl 
@@ -199,6 +190,55 @@
             document.getElementById("review-pending").classList.add("active");
         }
 
+        function triggerUpload(type) { 
+            currentUploadType = type; 
+            document.getElementById("file-input").value = ""; // 清空，確保可重複選同一張
+            document.getElementById("file-input").click(); 
+        }
+
+        function handleFileSelect() {
+            const file = document.getElementById("file-input").files[0];
+            if (!file) return;
+
+            // 🔥 1. 檢查檔案大小 (限制 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert("⚠️ 照片太大了！請選擇 5MB 以下的照片。");
+                return;
+            }
+
+            // 🔥 2. UI 即時回饋 (顯示上傳中)
+            const btn = document.querySelector(`button[onclick="triggerUpload('${currentUploadType}')"]`);
+            const originalText = btn.innerText;
+            btn.innerText = "⏳ 上傳中..."; 
+            btn.disabled = true;
+
+            const r = new FileReader();
+            r.readAsDataURL(file);
+            r.onload = async function() {
+                try {
+                    const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "uploadDoc", userId: userProfile.userId, docType: currentUploadType, fileName: file.name, mimeType: file.type, fileData: r.result.split(',')[1] }) });
+                    const result = await res.json();
+                    
+                    if(result.success) { 
+                        alert("✅ 上傳成功！請等待審核通知。"); 
+                        btn.innerText = "已上傳";
+                        btn.style.background = "#ccc";
+                        
+                        if(currentUploadType==='front') document.getElementById("r-icon-front").className="check-icon done";
+                        if(currentUploadType==='back') document.getElementById("r-icon-back").className="check-icon done";
+                        if(currentUploadType==='police') document.getElementById("r-icon-police").className="check-icon done";
+                    } else {
+                        throw new Error("上傳失敗");
+                    }
+                } catch(e) { 
+                    alert("❌ 上傳失敗，請檢查網路或稍後再試。"); 
+                    btn.innerText = "上傳";
+                    btn.disabled = false;
+                }
+            };
+        }
+
+        // ... (其餘 switchTab, loadOrders, saveProfile 等函式保持不變，為求完整性我下方還是附上) ...
         function switchTab(tab) {
             document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active-tab'));
@@ -211,7 +251,6 @@
                 loadOrders();
             }
         }
-
         async function loadOrders() {
             const container = document.getElementById("order-list");
             container.innerHTML = '<p style="text-align:center; color:#999;">載入中...</p>';
@@ -220,8 +259,7 @@
                 const result = await res.json();
                 container.innerHTML = "";
                 if (!result.orders || result.orders.length === 0) {
-                    container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">目前沒有訂單</p>';
-                    return;
+                    container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">目前沒有訂單</p>'; return;
                 }
                 result.orders.forEach(order => {
                     let statusBadge = `<span style="color:orange">待確認</span>`;
@@ -229,27 +267,18 @@
                     if (order.status === '已接單') { statusBadge = `<span style="color:green">✅ 已接單</span>`; buttons = `<button style="width:100%;background:#eee;border:none;padding:8px;border-radius:5px;" disabled>等待服務開始</button>`; }
                     else if (order.status === '已拒絕') { statusBadge = `<span style="color:red">❌ 已拒絕</span>`; buttons = ``; }
                     else if (order.status === '已完成') { statusBadge = `<span style="color:gray">🏁 已完成</span>`; buttons = `<div style="font-size:12px;color:#f57c00;">★ ${order.rating||""} ${order.comment||""}</div>`; }
-                    
                     const card = document.createElement("div");
                     card.className = `order-card ${order.status === '待確認' ? 'pending' : 'accepted'}`;
-                    card.innerHTML = `
-                        <div class="order-header"><span>📅 ${order.bookingTime || "未指定"}</span>${statusBadge}</div>
-                        <div style="font-size:16px; font-weight:bold;">👶 ${order.child}</div>
-                        <div style="font-size:14px; margin:5px 0;">家長：${order.parent}</div>
-                        <div style="background:#f9f9f9; padding:8px; font-size:13px; color:#555; border-radius:5px;">備註：${order.note || "無"}</div>
-                        <div style="text-align:right; font-weight:bold; color:#06c755; margin:10px 0;">$${order.price}</div>
-                        <div class="btn-group">${buttons}</div>`;
+                    card.innerHTML = `<div class="order-header"><span>📅 ${order.bookingTime || "未指定"}</span>${statusBadge}</div><div style="font-size:16px; font-weight:bold;">👶 ${order.child}</div><div style="font-size:14px; margin:5px 0;">家長：${order.parent}</div><div style="background:#f9f9f9; padding:8px; font-size:13px; color:#555; border-radius:5px;">備註：${order.note || "無"}</div><div style="text-align:right; font-weight:bold; color:#06c755; margin:10px 0;">$${order.price}</div><div class="btn-group">${buttons}</div>`;
                     container.appendChild(card);
                 });
             } catch (err) { container.innerHTML = "載入失敗"; }
         }
-
         async function updateOrder(row, status) {
             if(!confirm(`確定要變更為「${status}」嗎？`)) return;
             await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "updateOrderStatus", row: row, newStatus: status }) });
             alert("更新成功"); loadOrders();
         }
-
         function addSlot() {
             const slot = `${document.getElementById("sel-day").value} ${document.getElementById("sel-time").value}`;
             if (!mySchedule.includes(slot)) { mySchedule.push(slot); mySchedule.sort(); renderSchedule(); }
@@ -258,27 +287,6 @@
         function renderSchedule() {
             const c = document.getElementById("schedule-list"); c.innerHTML = "";
             mySchedule.forEach((s, i) => c.innerHTML += `<div class="time-slot"><span>🕒 ${s}</span><span class="btn-del" onclick="removeSlot(${i})">✕</span></div>`);
-        }
-        function triggerUpload(type) { currentUploadType = type; document.getElementById("file-input").click(); }
-        function handleFileSelect() {
-            const file = document.getElementById("file-input").files[0];
-            if (!file) return;
-            const btn = document.querySelector(`button[onclick="triggerUpload('${currentUploadType}')"]`);
-            btn.innerText = "..."; btn.disabled = true;
-            const r = new FileReader();
-            r.readAsDataURL(file);
-            r.onload = async function() {
-                try {
-                    const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "uploadDoc", userId: userProfile.userId, docType: currentUploadType, fileName: file.name, mimeType: file.type, fileData: r.result.split(',')[1] }) });
-                    const result = await res.json();
-                    if(result.success) { 
-                        alert("上傳成功"); 
-                        if(currentUploadType==='front') document.getElementById("r-icon-front").className="check-icon done";
-                        if(currentUploadType==='back') document.getElementById("r-icon-back").className="check-icon done";
-                        if(currentUploadType==='police') document.getElementById("r-icon-police").className="check-icon done";
-                    } 
-                } catch(e) { alert("錯誤"); } finally { btn.innerText = "上傳"; btn.disabled = false; }
-            };
         }
         async function saveProfile() {
             const btn = document.querySelector(".btn-main"); btn.innerText="儲存中..."; btn.disabled=true;
