@@ -18,7 +18,6 @@
         label { display: block; font-weight: bold; margin: 15px 0 5px; font-size: 14px; color: #555; }
         input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; background: #fafafa; font-size: 15px; }
         
-        /* Checklist */
         .checklist-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
         .check-status { display: flex; align-items: center; }
         .check-icon { margin-right: 10px; font-size: 18px; color: #ddd; width: 24px; text-align: center;}
@@ -26,17 +25,14 @@
         .btn-upload { background: #06c755; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold; }
         .uploaded-link { color: #06c755; text-decoration: none; font-size: 13px; margin-right: 10px; }
 
-        /* 排程 */
         .time-slot { background: #e3f2fd; color: #1565c0; padding: 10px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
         .btn-del { color: #d32f2f; font-weight: bold; cursor: pointer; padding: 5px; }
 
-        /* 底部導覽列 */
         .tab-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #eee; display: flex; padding-bottom: 20px; z-index: 999; }
         .tab-item { flex: 1; text-align: center; padding: 10px; color: #999; cursor: pointer; font-size: 12px; }
         .tab-item.active-tab { color: #06c755; font-weight: bold; border-top: 2px solid #06c755; }
         .tab-icon { font-size: 20px; display: block; margin-bottom: 2px; }
 
-        /* 訂單卡片 */
         .order-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #ccc; }
         .order-card.pending { border-left-color: #ff9800; } 
         .order-card.accepted { border-left-color: #06c755; }
@@ -53,7 +49,7 @@
 <body>
 
     <div id="loading" class="page active" style="text-align:center; padding-top: 50px;">
-        <p>🔄 系統讀取中...</p>
+        <p>🔄 讀取中...</p>
     </div>
 
     <div id="tab-profile" class="page">
@@ -119,6 +115,7 @@
 
     <script>
         const LIFF_ID = "2008808827-DzeTt84n"; 
+        // 👇 確保這裡填入您部署後的最新網址
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec"; 
 
         let userProfile = null;
@@ -126,7 +123,7 @@
         let currentUploadType = "";
 
         async function main() {
-            // 🔥 自動生成 08:00 ~ 22:00 的 30 分鐘刻度
+            // 自動生成半小時刻度
             const timeSelect = document.getElementById("sel-time");
             for (let i = 8; i <= 21; i++) { 
                 let h = i < 10 ? "0" + i : i;
@@ -134,16 +131,26 @@
                 timeSelect.innerHTML += `<option value="${h}:30">${h}:30</option>`;
             }
             
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) { liff.login(); return; }
-            userProfile = await liff.getProfile();
-            checkLogin();
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                userProfile = await liff.getProfile();
+                checkLogin();
+            } catch (err) {
+                // 發生錯誤時強制顯示UI
+                document.getElementById("loading").classList.remove("active");
+                document.getElementById("tab-profile").classList.add("active");
+                alert("初始化失敗，請檢查網路");
+            }
         }
 
         async function checkLogin() {
             try {
                 const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "login", userId: userProfile.userId }) });
                 const text = await res.text();
+                
+                if (text.includes("<!DOCTYPE html>")) throw new Error("權限設定錯誤");
+                
                 const result = JSON.parse(text);
                 
                 document.getElementById("loading").classList.remove("active");
@@ -167,7 +174,11 @@
                     try { mySchedule = JSON.parse(d.schedule); } catch(e){ mySchedule=[]; }
                     renderSchedule();
                 }
-            } catch (err) { alert("連線錯誤"); }
+            } catch (err) { 
+                document.getElementById("loading").classList.remove("active");
+                document.getElementById("tab-profile").classList.add("active");
+                alert("連線錯誤：" + err); 
+            }
         }
 
         function switchTab(tab) {
@@ -200,7 +211,6 @@
                     if (order.status === '已接單') { statusBadge = `<span style="color:green">✅ 已接單</span>`; buttons = `<button style="width:100%;background:#eee;border:none;padding:8px;border-radius:5px;" disabled>等待服務開始</button>`; }
                     else if (order.status === '已拒絕') { statusBadge = `<span style="color:red">❌ 已拒絕</span>`; buttons = ``; }
                     
-                    // 顯示預約時段 (bookingTime)
                     const card = document.createElement("div");
                     card.className = `order-card ${order.status === '待確認' ? 'pending' : 'accepted'}`;
                     card.innerHTML = `
@@ -214,8 +224,7 @@
                 });
             } catch (err) { container.innerHTML = "載入失敗"; }
         }
-        
-        // ... (updateOrder, addSlot, saveProfile, upload 等功能維持不變，篇幅省略，若有需要請參考上一版) ...
+
         async function updateOrder(row, status) {
             if(!confirm(`確定要變更為「${status}」嗎？`)) return;
             await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "updateOrderStatus", row: row, newStatus: status }) });
