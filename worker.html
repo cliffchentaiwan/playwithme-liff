@@ -36,6 +36,7 @@
         .order-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #ccc; }
         .order-card.pending { border-left-color: #ff9800; } 
         .order-card.accepted { border-left-color: #06c755; }
+        .order-card.completed { border-left-color: #999; background: #f9f9f9; }
         .order-header { display: flex; justify-content: space-between; font-size: 14px; color: #666; margin-bottom: 10px; }
         .btn-group { display: flex; gap: 10px; margin-top: 10px; }
         .btn-accept { flex: 1; background: #06c755; color: white; border: none; padding: 8px; border-radius: 5px; font-weight: bold; cursor: pointer; }
@@ -49,7 +50,8 @@
 <body>
 
     <div id="loading" class="page active" style="text-align:center; padding-top: 50px;">
-        <p>🔄 讀取中...</p>
+        <p>🔄 系統連線中...</p>
+        <p style="font-size:12px; color:#999;" id="loading-msg">正在呼叫後端...</p>
     </div>
 
     <div id="tab-profile" class="page">
@@ -95,175 +97,4 @@
                 <select id="sel-day" style="flex:1"><option value="週一">週一</option><option value="週二">週二</option><option value="週三">週三</option><option value="週四">週四</option><option value="週五">週五</option><option value="週六">週六</option><option value="週日">週日</option></select>
                 <select id="sel-time" style="flex:1"></select>
             </div>
-            <button onclick="addSlot()" style="width:100%; margin-top:10px; background:#e3f2fd; color:#1565c0; border:none; padding:10px; border-radius:8px;">+ 新增時段</button>
-        </div>
-
-        <button class="btn-main" onclick="saveProfile()">儲存更新</button>
-    </div>
-
-    <div id="tab-orders" class="page" style="padding-bottom: 80px;">
-        <h2 style="margin-left: 5px;">訂單管理</h2>
-        <div id="order-list"><p style="text-align:center; color:#999; margin-top:50px;">載入中...</p></div>
-    </div>
-
-    <div class="tab-bar">
-        <div class="tab-item active-tab" onclick="switchTab('profile')"><span class="tab-icon">👤</span>檔案</div>
-        <div class="tab-item" onclick="switchTab('orders')"><span class="tab-icon">📄</span>訂單</div>
-    </div>
-    
-    <input type="file" id="file-input" style="display:none" accept="image/*" onchange="handleFileSelect()">
-
-    <script>
-        const LIFF_ID = "2008808827-DzeTt84n"; 
-        // 👇 確保這裡填入您部署後的最新網址
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec"; 
-
-        let userProfile = null;
-        let mySchedule = [];
-        let currentUploadType = "";
-
-        async function main() {
-            // 自動生成半小時刻度
-            const timeSelect = document.getElementById("sel-time");
-            for (let i = 8; i <= 21; i++) { 
-                let h = i < 10 ? "0" + i : i;
-                timeSelect.innerHTML += `<option value="${h}:00">${h}:00</option>`;
-                timeSelect.innerHTML += `<option value="${h}:30">${h}:30</option>`;
-            }
-            
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                if (!liff.isLoggedIn()) { liff.login(); return; }
-                userProfile = await liff.getProfile();
-                checkLogin();
-            } catch (err) {
-                // 發生錯誤時強制顯示UI
-                document.getElementById("loading").classList.remove("active");
-                document.getElementById("tab-profile").classList.add("active");
-                alert("初始化失敗，請檢查網路");
-            }
-        }
-
-        async function checkLogin() {
-            try {
-                const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "login", userId: userProfile.userId }) });
-                const text = await res.text();
-                
-                if (text.includes("<!DOCTYPE html>")) throw new Error("權限設定錯誤");
-                
-                const result = JSON.parse(text);
-                
-                document.getElementById("loading").classList.remove("active");
-                document.getElementById("tab-profile").classList.add("active");
-                document.getElementById("form-avatar").src = userProfile.pictureUrl;
-                document.getElementById("form-name").innerText = userProfile.displayName;
-
-                if (result.isRegistered) {
-                    const d = result.data;
-                    document.getElementById("inp-rate").value = d.rate;
-                    document.getElementById("inp-tags").value = d.tags;
-                    document.getElementById("inp-intro").value = d.intro;
-                    document.getElementById("inp-bank").value = d.bank;
-                    document.getElementById("inp-online-status").value = d.status;
-                    
-                    if(d.verified==="Verified") { document.getElementById("form-status").innerText="已認證"; document.getElementById("form-status").className="badge badge-green"; }
-                    if(d.docFront) document.getElementById("icon-front").className="check-icon done";
-                    if(d.docBack) document.getElementById("icon-back").className="check-icon done";
-                    if(d.docPolice) document.getElementById("icon-police").className="check-icon done";
-
-                    try { mySchedule = JSON.parse(d.schedule); } catch(e){ mySchedule=[]; }
-                    renderSchedule();
-                }
-            } catch (err) { 
-                document.getElementById("loading").classList.remove("active");
-                document.getElementById("tab-profile").classList.add("active");
-                alert("連線錯誤：" + err); 
-            }
-        }
-
-        function switchTab(tab) {
-            document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active-tab'));
-            if (tab === 'profile') {
-                document.getElementById('tab-profile').classList.add('active');
-                document.querySelectorAll('.tab-item')[0].classList.add('active-tab');
-            } else {
-                document.getElementById('tab-orders').classList.add('active');
-                document.querySelectorAll('.tab-item')[1].classList.add('active-tab');
-                loadOrders();
-            }
-        }
-
-        async function loadOrders() {
-            const container = document.getElementById("order-list");
-            container.innerHTML = '<p style="text-align:center; color:#999;">重新整理中...</p>';
-            try {
-                const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getMyOrders", workerName: userProfile.displayName }) });
-                const result = await res.json();
-                container.innerHTML = "";
-                if (!result.orders || result.orders.length === 0) {
-                    container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">目前沒有訂單</p>';
-                    return;
-                }
-                result.orders.forEach(order => {
-                    let statusBadge = `<span style="color:orange">待確認</span>`;
-                    let buttons = `<button class="btn-reject" onclick="updateOrder(${order.row}, '已拒絕')">拒絕</button><button class="btn-accept" onclick="updateOrder(${order.row}, '已接單')">接單</button>`;
-                    if (order.status === '已接單') { statusBadge = `<span style="color:green">✅ 已接單</span>`; buttons = `<button style="width:100%;background:#eee;border:none;padding:8px;border-radius:5px;" disabled>等待服務開始</button>`; }
-                    else if (order.status === '已拒絕') { statusBadge = `<span style="color:red">❌ 已拒絕</span>`; buttons = ``; }
-                    
-                    const card = document.createElement("div");
-                    card.className = `order-card ${order.status === '待確認' ? 'pending' : 'accepted'}`;
-                    card.innerHTML = `
-                        <div class="order-header"><span>📅 ${order.bookingTime || "未指定"}</span>${statusBadge}</div>
-                        <div style="font-size:16px; font-weight:bold;">👶 ${order.child}</div>
-                        <div style="font-size:14px; margin:5px 0;">家長：${order.parent}</div>
-                        <div style="background:#f9f9f9; padding:8px; font-size:13px; color:#555; border-radius:5px;">備註：${order.note || "無"}</div>
-                        <div style="text-align:right; font-weight:bold; color:#06c755; margin:10px 0;">$${order.price}</div>
-                        <div class="btn-group">${buttons}</div>`;
-                    container.appendChild(card);
-                });
-            } catch (err) { container.innerHTML = "載入失敗"; }
-        }
-
-        async function updateOrder(row, status) {
-            if(!confirm(`確定要變更為「${status}」嗎？`)) return;
-            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "updateOrderStatus", row: row, newStatus: status }) });
-            alert("更新成功"); loadOrders();
-        }
-
-        function addSlot() {
-            const slot = `${document.getElementById("sel-day").value} ${document.getElementById("sel-time").value}`;
-            if (!mySchedule.includes(slot)) { mySchedule.push(slot); mySchedule.sort(); renderSchedule(); }
-        }
-        function removeSlot(idx) { mySchedule.splice(idx, 1); renderSchedule(); }
-        function renderSchedule() {
-            const c = document.getElementById("schedule-list"); c.innerHTML = "";
-            mySchedule.forEach((s, i) => c.innerHTML += `<div class="time-slot"><span>🕒 ${s}</span><span class="btn-del" onclick="removeSlot(${i})">✕</span></div>`);
-        }
-        function triggerUpload(type) { currentUploadType = type; document.getElementById("file-input").click(); }
-        function handleFileSelect() {
-            const file = document.getElementById("file-input").files[0];
-            if (!file) return;
-            const btn = document.querySelector(`button[onclick="triggerUpload('${currentUploadType}')"]`);
-            btn.innerText = "..."; btn.disabled = true;
-            const r = new FileReader();
-            r.readAsDataURL(file);
-            r.onload = async function() {
-                try {
-                    const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "uploadDoc", userId: userProfile.userId, docType: currentUploadType, fileName: file.name, mimeType: file.type, fileData: r.result.split(',')[1] }) });
-                    const result = await res.json();
-                    if(result.success) { alert("上傳成功"); if(currentUploadType==='front') document.getElementById("icon-front").className="check-icon done"; } 
-                } catch(e) { alert("錯誤"); } finally { btn.innerText = "上傳"; btn.disabled = false; }
-            };
-        }
-        async function saveProfile() {
-            const btn = document.querySelector(".btn-main"); btn.innerText="儲存中..."; btn.disabled=true;
-            const data = { action: "updateProfile", userId: userProfile.userId, name: userProfile.displayName, photo: userProfile.pictureUrl, rate: document.getElementById("inp-rate").value, tags: document.getElementById("inp-tags").value, intro: document.getElementById("inp-intro").value, bank: document.getElementById("inp-bank").value, status: document.getElementById("inp-online-status").value, schedule: JSON.stringify(mySchedule) };
-            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
-            alert("✅ 資料更新成功"); btn.innerText="儲存更新"; btn.disabled=false;
-        }
-
-        main();
-    </script>
-</body>
-</html>
+            <button onclick="addSlot()" style="width:100%; margin-top:10px; background:#e3f2fd; color:#1565c0; border:none; padding:10px; border-radius:8px;">+ 新增時段
