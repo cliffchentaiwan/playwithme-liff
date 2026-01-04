@@ -6,47 +6,56 @@
     <title>孩友友 - 尋找陪玩夥伴</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; color: #333; }
-        h2 { color: #333; margin-bottom: 20px; font-size: 24px; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; padding-bottom: 80px; color: #333; }
         
-        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
-        .filter-tag { background: white; padding: 8px 16px; border-radius: 20px; border: 1px solid #ddd; color: #666; font-size: 14px; white-space: nowrap; cursor: pointer; transition: all 0.2s; }
-        .filter-tag.active { background: #06c755; color: white; border-color: #06c755; font-weight: bold; }
+        /* 標題與篩選區 */
+        h2 { color: #333; margin-bottom: 15px; font-size: 22px; font-weight: 800; }
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .filter-tag { background: white; padding: 8px 16px; border-radius: 20px; border: 1px solid #eee; color: #666; font-size: 14px; white-space: nowrap; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .filter-tag.active { background: #06c755; color: white; border-color: #06c755; font-weight: bold; box-shadow: 0 4px 10px rgba(6, 199, 85, 0.3); }
 
+        /* 列表區 */
         .worker-list { display: grid; gap: 15px; }
+        .card { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; align-items: center; transition: transform 0.1s; border: 1px solid #f0f0f0; }
+        .card:active { transform: scale(0.98); background: #fafafa; }
         
-        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; align-items: center; transition: transform 0.1s; }
-        .card:active { transform: scale(0.98); }
+        .avatar { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; margin-right: 15px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .info { flex: 1; overflow: hidden; }
+        .name { font-size: 17px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; color: #333; }
+        .rating { font-size: 12px; color: #f57c00; margin-left: 6px; background: #fff3e0; padding: 2px 6px; border-radius: 6px; display: flex; align-items: center; }
+        .tags { font-size: 13px; color: #888; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .price { font-size: 16px; color: #06c755; font-weight: 800; }
         
-        .avatar { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 15px; border: 1px solid #eee; }
-        .info { flex: 1; }
-        .name { font-size: 18px; font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; }
-        .rating { font-size: 13px; color: #f57c00; margin-left: 8px; background: #fff3e0; padding: 2px 6px; border-radius: 4px; }
-        .tags { font-size: 13px; color: #666; margin-bottom: 4px; }
-        .price { font-size: 16px; color: #06c755; font-weight: bold; }
-        
-        .btn-book { background-color: #06c755; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .btn-book:disabled { background-color: #ccc; cursor: not-allowed; }
+        .btn-book { background-color: #06c755; color: white; border: none; padding: 8px 20px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(6, 199, 85, 0.2); transition: background 0.2s; }
+        .btn-book:active { background-color: #05a044; }
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: end; z-index: 1000; }
+        /* 預約彈窗 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: end; z-index: 2000; backdrop-filter: blur(2px); }
         .modal.show { display: flex; }
-        .modal-content { background: white; width: 100%; max-width: 500px; padding: 25px; border-radius: 20px 20px 0 0; animation: slideUp 0.3s; }
+        .modal-content { background: white; width: 100%; max-width: 500px; padding: 25px; border-radius: 24px 24px 0 0; animation: slideUp 0.3s cubic-bezier(0.25, 1, 0.5, 1); max-height: 90vh; overflow-y: auto; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
-        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: #fafafa; }
+        /* 表單元件 */
+        label { display: block; font-size: 14px; font-weight: bold; color: #555; margin: 15px 0 8px 0; }
+        input, textarea, select { width: 100%; padding: 14px; border: 1px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 16px; background: #f9f9f9; outline: none; transition: border 0.2s; }
+        input:focus, textarea:focus, select:focus { border-color: #06c755; background: #fff; }
         
-        /* 雙欄排版 */
-        .row { display: flex; gap: 10px; }
+        .row { display: flex; gap: 12px; }
         .col { flex: 1; }
 
-        .btn-submit { width: 100%; padding: 14px; background: #06c755; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; margin-top: 10px; }
-        .btn-submit:disabled { background: #999; }
-        .close-btn { float: right; font-size: 24px; cursor: pointer; color: #999; }
+        .price-summary { background: #e8f5e9; padding: 15px; border-radius: 12px; margin: 20px 0; display: flex; justify-content: space-between; align-items: center; border: 1px solid #c8e6c9; }
+        .price-label { color: #2e7d32; font-size: 14px; font-weight: bold; }
+        .total-price { font-size: 24px; font-weight: 900; color: #06c755; }
 
-        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; color: transparent !important; border-radius: 4px; }
+        .btn-submit { width: 100%; padding: 16px; background: #06c755; color: white; border: none; border-radius: 16px; font-size: 18px; font-weight: bold; margin-top: 10px; cursor: pointer; box-shadow: 0 4px 15px rgba(6, 199, 85, 0.3); }
+        .btn-submit:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
+        .close-btn { float: right; font-size: 24px; cursor: pointer; color: #ddd; margin-top: -10px; margin-right: -5px; padding: 5px; }
+
+        /* 骨架屏 */
+        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; color: transparent !important; border-radius: 6px; }
         @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        .skeleton-text { height: 16px; margin-bottom: 5px; width: 60%; background: #eee; }
-        .skeleton-avatar { width: 70px; height: 70px; background: #eee; border-radius: 50%; }
+        .skeleton-text { height: 16px; margin-bottom: 6px; width: 60%; background: #eee; }
+        .skeleton-avatar { width: 75px; height: 75px; background: #eee; border-radius: 50%; }
     </style>
 </head>
 <body>
@@ -59,6 +68,7 @@
         <div class="filter-tag" onclick="filterWorkers('鋼琴', this)">🎹 鋼琴</div>
         <div class="filter-tag" onclick="filterWorkers('運動', this)">⚽ 運動</div>
         <div class="filter-tag" onclick="filterWorkers('英文', this)">🔤 英文</div>
+        <div class="filter-tag" onclick="filterWorkers('陪玩', this)">🧸 陪玩</div>
     </div>
 
     <div id="worker-list" class="worker-list"></div>
@@ -66,18 +76,18 @@
     <div id="booking-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">×</span>
-            <h3 id="modal-worker-name" style="margin-top:0">預約</h3>
-            <p style="color:#666; font-size:14px; margin-bottom:15px;">請選擇開始時間與時數。</p>
+            <h3 id="modal-worker-name" style="margin-top:0; font-size: 20px;">預約</h3>
+            <p style="color:#888; font-size:14px; margin-bottom:20px;">請選擇想預約的日期與服務時長。</p>
             
             <div class="row">
-                <div class="col">
-                    <label>開始時間</label>
+                <div class="col" style="flex:2">
+                    <label>預約日期 (未來兩週)</label>
                     <select id="inp-time">
-                        <option>載入中...</option>
+                        <option>載入時段中...</option>
                     </select>
                 </div>
-                <div class="col">
-                    <label>預約時數</label>
+                <div class="col" style="flex:1">
+                    <label>時數</label>
                     <select id="inp-duration">
                         <option value="1">1 小時</option>
                         <option value="1.5">1.5 小時</option>
@@ -90,32 +100,34 @@
             </div>
             
             <label>孩童資訊 (年齡/性別)</label>
-            <input type="text" id="inp-child" placeholder="例如：5歲 男生">
+            <input type="text" id="inp-child" placeholder="例如：5歲 小男生，比較怕生">
             
-            <label>備註需求</label>
-            <textarea id="inp-note" rows="3" placeholder="例如：需要幫忙看功課"></textarea>
+            <label>給夥伴的備註</label>
+            <textarea id="inp-note" rows="3" placeholder="例如：希望可以帶畫筆來..."></textarea>
 
-            <div style="background:#e8f5e9; padding:10px; border-radius:8px; margin-bottom:10px;">
-                <span style="color:#666; font-size:14px;">預估金額：</span>
-                <span id="total-price" style="font-size:18px; font-weight:bold; color:#06c755; float:right;">$0</span>
+            <div class="price-summary">
+                <span class="price-label">預估金額</span>
+                <span id="total-price" class="total-price">$0</span>
             </div>
 
-            <button class="btn-submit" onclick="submitBooking()">送出預約</button>
+            <button class="btn-submit" onclick="submitBooking()">確認預約</button>
         </div>
     </div>
 
     <script>
         const LIFF_ID = "2008808827-DzeTt84n"; 
+        // 👇 您的 Apps Script 網址
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec"; 
         
         let allWorkers = [];
         let userProfile = null;
         let selectedWorker = null;
 
+        // 骨架屏渲染 (極速感)
         function renderSkeleton() {
             const list = document.getElementById("worker-list");
             let html = "";
-            for(let i=0; i<3; i++) {
+            for(let i=0; i<4; i++) {
                 html += `
                 <div class="card">
                     <div class="skeleton-avatar skeleton"></div>
@@ -138,7 +150,7 @@
                 loadWorkers();
             } catch (err) { alert("初始化失敗：" + err); }
             
-            // 監聽時數改變，即時計算金額
+            // 監聽時數變更，即時算錢
             document.getElementById("inp-duration").addEventListener("change", updatePrice);
         }
 
@@ -148,33 +160,39 @@
                 const workers = await res.json();
                 allWorkers = workers;
                 renderWorkers(workers);
-            } catch (err) { document.getElementById("worker-list").innerHTML = `<p style="text-align:center; color:#999; padding:20px;">😢 暫時無法讀取列表</p>`; }
+            } catch (err) { document.getElementById("worker-list").innerHTML = `<p style="text-align:center; color:#999; padding:20px;">😢 暫時無法讀取列表，請重新整理</p>`; }
         }
 
         function renderWorkers(workers) {
             const list = document.getElementById("worker-list");
             list.innerHTML = "";
-            if (workers.length === 0) { list.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">目前沒有上線的夥伴</p>`; return; }
+            if (workers.length === 0) { list.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">目前沒有符合條件的夥伴</p>`; return; }
 
             workers.forEach(w => {
                 let ratingHtml = "";
                 let displayName = w.name;
-                let displayTags = w.tags;
-                if(w.tags && w.tags.includes("⭐")) {
-                    const match = w.tags.match(/⭐(\d+\.\d+)/);
+                let displayTags = w.tags || "";
+                
+                // 解析星星
+                if(displayTags.includes("⭐")) {
+                    const match = displayTags.match(/⭐(\d+\.\d+)/);
                     if(match) {
                         ratingHtml = `<span class="rating">⭐ ${match[1]}</span>`;
                         displayTags = displayTags.replace(/⭐\d+\.\d+/, "").trim(); 
                     }
                 }
+
+                // 安全處理頭像
+                const photoUrl = w.photo && w.photo.startsWith("http") ? w.photo : "https://via.placeholder.com/70?text=No+Image";
+
                 const div = document.createElement("div");
                 div.className = "card";
                 div.innerHTML = `
-                    <img class="avatar" src="${w.photo}" onerror="this.src='https://via.placeholder.com/70'">
+                    <img class="avatar" src="${photoUrl}" onerror="this.src='https://via.placeholder.com/70?text=Error'">
                     <div class="info">
                         <div class="name">${displayName} ${ratingHtml}</div>
                         <div class="tags">${displayTags}</div>
-                        <div class="price">$${w.rate} / 小時</div>
+                        <div class="price">$${w.rate} <span style="font-size:12px;color:#999;font-weight:normal;">/ 小時</span></div>
                     </div>
                     <button class="btn-book" onclick='openBooking(${JSON.stringify(w)})'>預約</button>
                 `;
@@ -186,7 +204,57 @@
             document.querySelectorAll(".filter-tag").forEach(el => el.classList.remove("active"));
             btn.classList.add("active");
             if (tag === 'all') renderWorkers(allWorkers);
-            else renderWorkers(allWorkers.filter(w => w.tags.includes(tag)));
+            else renderWorkers(allWorkers.filter(w => (w.tags || "").includes(tag)));
+        }
+
+        // 🔥 UX 核心優化：日期產生器
+        // 把 "週一" 變成 "01/05 (一)"，讓家長更有概念
+        function generateDateOptions(schedule) {
+            const dayMap = { "週日": 0, "週一": 1, "週二": 2, "週三": 3, "週四": 4, "週五": 5, "週六": 6 };
+            const today = new Date();
+            let options = [];
+
+            // 遍歷陪玩員的所有時段 (ex: ["週一 09:00", "週一 09:30"])
+            schedule.forEach(slot => {
+                const parts = slot.split(" ");
+                if (parts.length < 2) return;
+                
+                const dayStr = parts[0];
+                const timeStr = parts[1];
+                if (!dayMap.hasOwnProperty(dayStr)) return;
+
+                const targetDayIndex = dayMap[dayStr];
+                
+                // 往後找 14 天
+                for (let i = 0; i < 14; i++) {
+                    const futureDate = new Date();
+                    futureDate.setDate(today.getDate() + i);
+                    
+                    if (futureDate.getDay() === targetDayIndex) {
+                        // 格式化日期
+                        const month = (futureDate.getMonth() + 1).toString().padStart(2, '0');
+                        const date = futureDate.getDate().toString().padStart(2, '0');
+                        const dayShort = dayStr.replace("週", ""); 
+                        
+                        // 組合顯示文字
+                        const displayDate = `${month}/${date} (${dayShort}) ${timeStr}`;
+                        const fullDate = `${futureDate.getFullYear()}/${month}/${date} (${dayShort}) ${timeStr}`; // 實際送出的值
+                        
+                        // 產生時間戳記用於排序 (確保日期近的在上面)
+                        const sortKey = futureDate.getTime() + parseInt(timeStr.replace(":", ""));
+
+                        options.push({
+                            val: fullDate,
+                            display: displayDate,
+                            sort: sortKey
+                        });
+                    }
+                }
+            });
+
+            // 排序：日期近 -> 遠，時間早 -> 晚
+            options.sort((a, b) => a.sort - b.sort);
+            return options;
         }
 
         function openBooking(worker) {
@@ -195,16 +263,28 @@
             document.getElementById("booking-modal").classList.add("show");
             
             const sel = document.getElementById("inp-time");
-            sel.innerHTML = "";
+            sel.innerHTML = "<option>計算時段中...</option>";
+            
             let schedule = [];
             try { schedule = JSON.parse(worker.schedule); } catch(e) {}
-            
-            if (schedule.length === 0) {
-                sel.innerHTML = "<option>無可預約時段</option>";
+
+            if (!schedule || schedule.length === 0) {
+                sel.innerHTML = "<option>此夥伴暫無可預約時段</option>";
                 document.querySelector(".btn-submit").disabled = true;
             } else {
-                schedule.forEach(s => { sel.innerHTML += `<option value="${s}">${s}</option>`; });
-                document.querySelector(".btn-submit").disabled = false;
+                // 呼叫日期產生器
+                const dateOptions = generateDateOptions(schedule);
+                
+                if (dateOptions.length === 0) {
+                    sel.innerHTML = "<option>近期無符合時段</option>";
+                    document.querySelector(".btn-submit").disabled = true;
+                } else {
+                    sel.innerHTML = "";
+                    dateOptions.forEach(opt => {
+                        sel.innerHTML += `<option value="${opt.val}">${opt.display}</option>`;
+                    });
+                    document.querySelector(".btn-submit").disabled = false;
+                }
             }
             updatePrice();
         }
@@ -223,33 +303,33 @@
             const originalText = btn.innerText;
             btn.innerText = "🔄 處理中..."; btn.disabled = true;
 
-            const time = document.getElementById("inp-time").value;
+            const timeRaw = document.getElementById("inp-time").value; // ex: 2026/01/05 (一) 09:00
             const duration = document.getElementById("inp-duration").value;
             const child = document.getElementById("inp-child").value;
             const note = document.getElementById("inp-note").value;
             const totalPrice = document.getElementById("total-price").innerText.replace("$", "");
 
-            if (!child) { alert("請填寫孩童資訊"); btn.innerText=originalText; btn.disabled=false; return; }
+            if (!child) { alert("請填寫孩童資訊以供夥伴評估"); btn.innerText=originalText; btn.disabled=false; return; }
 
-            // 🔥 關鍵邏輯：將時間和時數組合成字串傳給後端
-            // 例如： "週一 15:00 (2小時)"
-            const fullBookingTime = `${time} (${duration}小時)`;
+            // 🔥 組合給後端的字串：時間 + 時數
+            // 這樣陪玩員後台就能看到： "2026/01/05 (一) 09:00 (2小時)"
+            const fullBookingInfo = `${timeRaw} (${duration}小時)`;
 
             const data = {
                 action: "book",
                 userName: userProfile.displayName,
                 companion: selectedWorker.name,
-                price: totalPrice, // 傳送總價
-                bookingTime: fullBookingTime, // 組合後的時間
+                price: totalPrice,
+                bookingTime: fullBookingInfo, 
                 childInfo: child,
                 note: note
             };
 
             try {
                 await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
-                alert("✅ 預約成功！\n夥伴確認後會通知您。");
+                alert("✅ 預約申請已送出！\n\n夥伴確認接單後，您會收到 LINE 通知。");
                 closeModal();
-            } catch (err) { alert("❌ 預約失敗，請檢查網路"); } 
+            } catch (err) { alert("❌ 預約失敗，請檢查網路連線"); } 
             finally { btn.innerText = originalText; btn.disabled = false; }
         }
 
