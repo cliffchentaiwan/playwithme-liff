@@ -3,310 +3,259 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>預約陪玩</title>
+    <title>孩友友 - 尋找陪玩夥伴</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; padding-bottom: 80px; }
-        .page { display: none; padding: 15px; }
-        .page.active { display: block; }
-        h2 { margin: 10px 0 20px; font-size: 18px; color: #444; }
-        .card { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 15px; display: flex; flex-direction: row; box-shadow: 0 2px 8px rgba(0,0,0,0.05); height: 120px; }
-        .card-img { width: 120px; height: 100%; object-fit: cover; background: #eee; }
-        .card-body { padding: 12px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
-        .name { font-size: 16px; font-weight: bold; color: #333; }
-        .tags { color: #888; font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 150px; }
-        .price { color: #06c755; font-weight: bold; font-size: 16px; }
-        .btn-book { background-color: #06c755; color: white; border: none; padding: 6px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; align-self: flex-end; cursor: pointer; }
-        .order-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #ccc; }
-        .order-card.pending { border-left-color: #ff9800; } 
-        .order-card.accepted { border-left-color: #06c755; }
-        .order-card.completed { border-left-color: #999; background: #f9f9f9; }
-        .btn-review { width: 100%; padding: 10px; background: #ff9800; color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; cursor: pointer; }
-        .tab-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #eee; display: flex; padding-bottom: 20px; z-index: 100; }
-        .tab-item { flex: 1; text-align: center; padding: 10px; color: #999; cursor: pointer; font-size: 12px; }
-        .tab-item.active-tab { color: #06c755; font-weight: bold; border-top: 2px solid #06c755; }
-        .tab-icon { font-size: 20px; display: block; margin-bottom: 2px; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; justify-content: center; align-items: center; }
-        .modal-content { background: white; width: 90%; max-height: 80vh; overflow-y: auto; padding: 20px; border-radius: 15px; box-sizing: border-box; }
-        .slot-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-        .slot-btn { padding: 8px 12px; border: 1px solid #ddd; background: #f9f9f9; border-radius: 8px; font-size: 14px; color: #333; cursor: pointer; }
-        .slot-btn.selected { background: #e8f5e9; border-color: #06c755; color: #06c755; font-weight: bold; }
-        .star-rating { font-size: 30px; color: #ddd; cursor: pointer; display: flex; justify-content: center; gap: 5px; margin: 10px 0; }
-        .star-rating span.active { color: #ffca28; }
-        .form-input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .modal-btns { margin-top: 20px; display: flex; gap: 10px; }
-        .btn-cancel { flex: 1; padding: 12px; background: #eee; border: none; border-radius: 8px; font-weight:bold; color:#666; cursor: pointer; }
-        .btn-submit { flex: 1; padding: 12px; background: #06c755; color: white; border: none; border-radius: 8px; font-weight:bold; cursor: pointer; }
-        #loading { text-align: center; color: #999; margin-top: 50px; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; color: #333; }
+        h2 { color: #333; margin-bottom: 20px; font-size: 24px; }
+        
+        /* 搜尋與篩選區 */
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+        .filter-tag { background: white; padding: 8px 16px; border-radius: 20px; border: 1px solid #ddd; color: #666; font-size: 14px; white-space: nowrap; cursor: pointer; transition: all 0.2s; }
+        .filter-tag.active { background: #06c755; color: white; border-color: #06c755; font-weight: bold; }
+
+        .worker-list { display: grid; gap: 15px; }
+        
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; align-items: center; transition: transform 0.1s; }
+        .card:active { transform: scale(0.98); }
+        
+        .avatar { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 15px; border: 1px solid #eee; }
+        .info { flex: 1; }
+        .name { font-size: 18px; font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; }
+        .rating { font-size: 13px; color: #f57c00; margin-left: 8px; background: #fff3e0; padding: 2px 6px; border-radius: 4px; }
+        .tags { font-size: 13px; color: #666; margin-bottom: 4px; }
+        .price { font-size: 16px; color: #06c755; font-weight: bold; }
+        
+        .btn-book { background-color: #06c755; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .btn-book:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        /* 彈窗樣式 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: end; z-index: 1000; }
+        .modal.show { display: flex; }
+        .modal-content { background: white; width: 100%; max-width: 500px; padding: 25px; border-radius: 20px 20px 0 0; animation: slideUp 0.3s; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: #fafafa; }
+        .btn-submit { width: 100%; padding: 14px; background: #06c755; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        .btn-submit:disabled { background: #999; }
+        .close-btn { float: right; font-size: 24px; cursor: pointer; color: #999; }
+
+        /* ✨ 骨架屏動畫 (讓載入看起來很快) */
+        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; color: transparent !important; border-radius: 4px; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        
+        .skeleton-text { height: 16px; margin-bottom: 5px; width: 60%; background: #eee; }
+        .skeleton-avatar { width: 70px; height: 70px; background: #eee; border-radius: 50%; }
     </style>
 </head>
 <body>
 
-    <div id="tab-home" class="page active">
-        <h2>🔥 尋找陪玩夥伴</h2>
-        <div id="loading">讀取中...</div>
-        <div id="list-container"></div>
+    <h2 style="margin-left:5px;">🔍 尋找陪玩夥伴</h2>
+
+    <div class="filter-bar">
+        <div class="filter-tag active" onclick="filterWorkers('all', this)">全部</div>
+        <div class="filter-tag" onclick="filterWorkers('畫畫', this)">🎨 畫畫</div>
+        <div class="filter-tag" onclick="filterWorkers('鋼琴', this)">🎹 鋼琴</div>
+        <div class="filter-tag" onclick="filterWorkers('運動', this)">⚽ 運動</div>
+        <div class="filter-tag" onclick="filterWorkers('英文', this)">🔤 英文</div>
     </div>
 
-    <div id="tab-orders" class="page">
-        <h2>📄 我的預約記錄</h2>
-        <div id="my-order-list"></div>
-    </div>
-
-    <div class="tab-bar">
-        <div class="tab-item active-tab" onclick="switchTab('home')"><span class="tab-icon">🔍</span>找夥伴</div>
-        <div class="tab-item" onclick="switchTab('orders')"><span class="tab-icon">📄</span>我的訂單</div>
-    </div>
-
-    <div id="booking-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 id="modal-title" style="margin-top:0;">預約確認</h3>
-            <p style="font-size:13px; color:#666;">1. 選擇時段</p>
-            <div id="slot-list" class="slot-container"></div>
-            <p id="no-slot-msg" style="color:#999; display:none; font-size:12px;">此夥伴暫無開放時段</p>
-
-            <p style="font-size:13px; color:#666;">2. 孩童資料</p>
-            <input type="text" id="child-info" class="form-input" placeholder="例如：小寶 5歲">
-            <textarea id="booking-note" class="form-input" rows="2" placeholder="備註需求"></textarea>
-            
-            <div class="modal-btns">
-                <button class="btn-cancel" onclick="closeModal('booking-modal')">取消</button>
-                <button class="btn-submit" onclick="submitBooking()">確認預約</button>
-            </div>
+    <div id="worker-list" class="worker-list">
         </div>
-    </div>
 
-    <div id="review-modal" class="modal-overlay">
+    <div id="booking-modal" class="modal">
         <div class="modal-content">
-            <h3 style="margin-top:0; text-align:center;">評價此次服務</h3>
-            <div class="star-rating" id="star-box">
-                <span onclick="setStar(1)">★</span>
-                <span onclick="setStar(2)">★</span>
-                <span onclick="setStar(3)">★</span>
-                <span onclick="setStar(4)">★</span>
-                <span onclick="setStar(5)">★</span>
-            </div>
-            <textarea id="review-comment" class="form-input" rows="3" placeholder="寫下您的心得..."></textarea>
-            <div class="modal-btns">
-                <button class="btn-cancel" onclick="closeModal('review-modal')">取消</button>
-                <button class="btn-submit" onclick="submitReview()">送出評價</button>
-            </div>
+            <span class="close-btn" onclick="closeModal()">×</span>
+            <h3 id="modal-worker-name" style="margin-top:0">預約</h3>
+            <p style="color:#666; font-size:14px; margin-bottom:15px;">請填寫預約資訊，夥伴確認後會通知您。</p>
+            
+            <label>選擇時段</label>
+            <select id="inp-time">
+                <option>載入時段中...</option>
+            </select>
+            
+            <label>孩童資訊 (年齡/性別)</label>
+            <input type="text" id="inp-child" placeholder="例如：5歲 男生">
+            
+            <label>備註需求</label>
+            <textarea id="inp-note" rows="3" placeholder="例如：需要幫忙看功課"></textarea>
+
+            <button class="btn-submit" onclick="submitBooking()">送出預約</button>
         </div>
     </div>
 
     <script>
         const LIFF_ID = "2008808827-DzeTt84n"; 
-        // 👇 ⚠️請務必換成您最新的 Script 網址
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
-
+        // 👇 務必確認這是最新的 Apps Script 網址
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec"; 
+        
+        let allWorkers = [];
         let userProfile = null;
-        let allWorkers = []; 
-        let selectedWorkerIndex = -1;
-        let selectedSlots = [];
-        let currentReviewOrderRow = -1;
-        let currentReviewWorker = "";
-        let currentStars = 5;
+        let selectedWorker = null;
+
+        // 初始化：先顯示 3 個假卡片 (骨架屏)
+        function renderSkeleton() {
+            const list = document.getElementById("worker-list");
+            let html = "";
+            for(let i=0; i<3; i++) {
+                html += `
+                <div class="card">
+                    <div class="skeleton-avatar skeleton"></div>
+                    <div class="info">
+                        <div class="name skeleton skeleton-text" style="width:40%"></div>
+                        <div class="tags skeleton skeleton-text"></div>
+                        <div class="price skeleton skeleton-text" style="width:30%"></div>
+                    </div>
+                </div>`;
+            }
+            list.innerHTML = html;
+        }
 
         async function main() {
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) { liff.login(); return; }
-            userProfile = await liff.getProfile();
-            loadWorkers();
+            renderSkeleton(); // ✨ 1. 馬上顯示骨架屏
+            
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (liff.isLoggedIn()) {
+                    userProfile = await liff.getProfile();
+                } else {
+                    liff.login();
+                    return;
+                }
+                loadWorkers(); // ✨ 2. 背景載入資料
+            } catch (err) {
+                alert("初始化失敗：" + err);
+            }
         }
 
         async function loadWorkers() {
             try {
-                const res = await fetch(SCRIPT_URL + "?action=getWorkers"); 
-                allWorkers = await res.json();
-                document.getElementById("loading").style.display = "none";
-                renderWorkers();
-            } catch (err) { document.getElementById("loading").innerText = "讀取失敗"; }
+                // 呼叫後端 API
+                const res = await fetch(SCRIPT_URL + "?action=getWorkers"); // 這裡用 GET
+                const workers = await res.json();
+                allWorkers = workers;
+                renderWorkers(workers); // ✨ 3. 資料回來了，替換掉骨架屏
+            } catch (err) {
+                document.getElementById("worker-list").innerHTML = `<p style="text-align:center; color:#999;">😢 暫時無法讀取列表，請稍後再試</p>`;
+            }
         }
 
-        function renderWorkers() {
-            const container = document.getElementById("list-container");
-            container.innerHTML = ""; 
-            if (!allWorkers || allWorkers.length === 0) {
-                container.innerHTML = "<p style='text-align:center;color:#999;'>目前無人上線</p>";
+        function renderWorkers(workers) {
+            const list = document.getElementById("worker-list");
+            list.innerHTML = "";
+            
+            if (workers.length === 0) {
+                list.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">目前沒有上線的夥伴</p>`;
                 return;
             }
-            allWorkers.forEach((w, index) => {
-                let img = (w.photo && w.photo.startsWith("http")) ? w.photo : "https://via.placeholder.com/150";
-                let tagText = w.tags || "";
-                const card = document.createElement("div");
-                card.className = "card";
-                card.innerHTML = `
-                    <img src="${img}" class="card-img">
-                    <div class="card-body">
-                        <div>
-                            <div class="name">${w.name}</div>
-                            <div class="tags" style="color:#f57c00; font-weight:bold;">${tagText}</div>
-                            <div style="font-size:12px; color:#666; margin-top:5px; height:32px; overflow:hidden;">${w.intro || "..."}</div>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span class="price">$${w.rate}<small>/hr</small></span>
-                            <button class="btn-book" onclick="openBooking(${index})">預約</button>
-                        </div>
-                    </div>`;
-                container.appendChild(card);
-            });
-        }
 
-        async function loadMyOrders() {
-            const container = document.getElementById("my-order-list");
-            container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">載入中...</p>';
-            try {
-                if(!userProfile) { liff.login(); return; }
-                const res = await fetch(SCRIPT_URL, { 
-                    method: "POST", 
-                    body: JSON.stringify({ action: "getMyOrders", role: "parent", userName: userProfile.displayName }) 
-                });
-                const result = await res.json();
-                container.innerHTML = "";
-                if (!result.orders || result.orders.length === 0) {
-                    container.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">您還沒有預約記錄喔</p>';
-                    return;
+            workers.forEach(w => {
+                // 解析評分
+                let ratingHtml = "";
+                let displayName = w.name;
+                // 從 tags 裡把 ⭐ 分數挖出來顯示在名字旁邊，並從 tag 裡移除，保持乾淨
+                let displayTags = w.tags;
+                if(w.tags && w.tags.includes("⭐")) {
+                    const match = w.tags.match(/⭐(\d+\.\d+)/);
+                    if(match) {
+                        ratingHtml = `<span class="rating">⭐ ${match[1]}</span>`;
+                        // 移除 tag 字串裡的星星，避免重複顯示
+                        displayTags = displayTags.replace(/⭐\d+\.\d+/, "").trim(); 
+                    }
                 }
-                result.orders.forEach(order => {
-                    let statusColor = "#orange";
-                    let statusText = order.status;
-                    let actionBtn = "";
-                    if (order.status === "待確認") statusColor = "orange";
-                    else if (order.status === "已拒絕") statusColor = "red";
-                    else if (order.status === "已接單") {
-                        statusColor = "green";
-                        actionBtn = `<button class="btn-review" onclick="openReview(${order.row}, '${order.worker}')">⭐ 完成服務並評價</button>`;
-                    }
-                    else if (order.status === "已完成") {
-                        statusColor = "#999";
-                        actionBtn = `<div style="margin-top:10px; font-size:13px; color:#f57c00;">★ ${order.rating || 5}分：${order.comment || ""}</div>`;
-                    }
-                    const card = document.createElement("div");
-                    card.className = `order-card ${order.status === '待確認'?'pending':(order.status==='已接單'?'accepted':'completed')}`;
-                    card.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
-                            <span>${order.worker}</span>
-                            <span style="color:${statusColor}">${statusText}</span>
-                        </div>
-                        <div style="font-size:14px; color:#555;">📅 ${order.bookingTime || "未指定"}</div>
-                        <div style="font-size:13px; color:#888; margin-top:5px;">備註：${order.note || "無"}</div>
-                        ${actionBtn}
-                    `;
-                    container.appendChild(card);
-                });
-            } catch (err) { container.innerHTML = "載入失敗"; }
-        }
 
-        function openBooking(index) {
-            selectedWorkerIndex = index;
-            selectedSlots = [];
-            const worker = allWorkers[index];
-            document.getElementById("modal-title").innerText = `預約 ${worker.name}`;
-            const slotBox = document.getElementById("slot-list");
-            slotBox.innerHTML = "";
-            let schedule = [];
-            try { schedule = JSON.parse(worker.schedule); } catch(e) { schedule = []; }
-            if (schedule.length === 0) document.getElementById("no-slot-msg").style.display = "block";
-            else {
-                document.getElementById("no-slot-msg").style.display = "none";
-                schedule.forEach(slot => {
-                    const btn = document.createElement("div");
-                    btn.className = "slot-btn";
-                    btn.innerText = slot;
-                    btn.onclick = () => {
-                        if (selectedSlots.includes(slot)) {
-                            selectedSlots = selectedSlots.filter(s => s !== slot);
-                            btn.classList.remove("selected");
-                        } else {
-                            selectedSlots.push(slot);
-                            btn.classList.add("selected");
-                        }
-                    };
-                    slotBox.appendChild(btn);
-                });
-            }
-            document.getElementById("booking-modal").style.display = "flex";
-        }
-
-        async function submitBooking() {
-            if (!userProfile) { alert("請先登入"); liff.login(); return; }
-            const child = document.getElementById("child-info").value;
-            const note = document.getElementById("booking-note").value;
-            const worker = allWorkers[selectedWorkerIndex];
-
-            if (selectedSlots.length === 0) { alert("請選擇時段"); return; }
-            if (!child) { alert("請填寫孩童資料"); return; }
-
-            const btn = document.querySelector("#booking-modal .btn-submit");
-            btn.innerText = "處理中..."; btn.disabled = true;
-
-            try {
-                await fetch(SCRIPT_URL, { 
-                    method: "POST", 
-                    body: JSON.stringify({ 
-                        action: "book", userName: userProfile.displayName, 
-                        companion: worker.name, price: worker.rate, 
-                        bookingTime: selectedSlots.join(", "), childInfo: child, note: note 
-                    }) 
-                });
-                alert("✅ 預約已送出！");
-                closeModal('booking-modal');
-                switchTab('orders');
-            } catch (err) { alert("錯誤：" + err); } 
-            finally { btn.innerText = "確認預約"; btn.disabled = false; }
-        }
-
-        function openReview(row, workerName) {
-            currentReviewOrderRow = row;
-            currentReviewWorker = workerName;
-            currentStars = 5;
-            setStar(5);
-            document.getElementById("review-comment").value = "";
-            document.getElementById("review-modal").style.display = "flex";
-        }
-
-        function setStar(n) {
-            currentStars = n;
-            const stars = document.querySelectorAll("#star-box span");
-            stars.forEach((s, i) => {
-                if (i < n) s.classList.add("active");
-                else s.classList.remove("active");
+                const div = document.createElement("div");
+                div.className = "card";
+                div.innerHTML = `
+                    <img class="avatar" src="${w.photo}" onerror="this.src='https://via.placeholder.com/70'">
+                    <div class="info">
+                        <div class="name">${displayName} ${ratingHtml}</div>
+                        <div class="tags">${displayTags}</div>
+                        <div class="price">$${w.rate} / 小時</div>
+                    </div>
+                    <button class="btn-book" onclick='openBooking(${JSON.stringify(w)})'>預約</button>
+                `;
+                list.appendChild(div);
             });
         }
 
-        async function submitReview() {
-            const comment = document.getElementById("review-comment").value;
-            const btn = document.querySelector("#review-modal .btn-submit");
-            btn.innerText = "送出中..."; btn.disabled = true;
-            try {
-                await fetch(SCRIPT_URL, { 
-                    method: "POST", 
-                    body: JSON.stringify({ 
-                        action: "submitReview", row: currentReviewOrderRow, workerName: currentReviewWorker,
-                        stars: currentStars, comment: comment 
-                    }) 
-                });
-                alert("✅ 評價成功！");
-                closeModal('review-modal');
-                loadMyOrders(); 
-            } catch (e) { alert("錯誤"); }
-            finally { btn.innerText = "送出評價"; btn.disabled = false; }
-        }
+        function filterWorkers(tag, btn) {
+            // 切換按鈕樣式
+            document.querySelectorAll(".filter-tag").forEach(el => el.classList.remove("active"));
+            btn.classList.add("active");
 
-        function switchTab(tab) {
-            document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active-tab'));
-            if (tab === 'home') {
-                document.getElementById('tab-home').classList.add('active');
-                document.querySelectorAll('.tab-item')[0].classList.add('active-tab');
-                loadWorkers(); 
+            if (tag === 'all') {
+                renderWorkers(allWorkers);
             } else {
-                document.getElementById('tab-orders').classList.add('active');
-                document.querySelectorAll('.tab-item')[1].classList.add('active-tab');
-                loadMyOrders();
+                const filtered = allWorkers.filter(w => w.tags.includes(tag));
+                renderWorkers(filtered);
             }
         }
-        function closeModal(id) { document.getElementById(id).style.display = "none"; }
+
+        function openBooking(worker) {
+            selectedWorker = worker;
+            document.getElementById("modal-worker-name").innerText = "預約 " + worker.name;
+            document.getElementById("booking-modal").classList.add("show");
+            
+            // 解析時段
+            const sel = document.getElementById("inp-time");
+            sel.innerHTML = "";
+            let schedule = [];
+            try { schedule = JSON.parse(worker.schedule); } catch(e) {}
+            
+            if (schedule.length === 0) {
+                sel.innerHTML = "<option>此夥伴暫無可預約時段</option>";
+                document.querySelector(".btn-submit").disabled = true;
+            } else {
+                schedule.forEach(s => {
+                    sel.innerHTML += `<option value="${s}">${s}</option>`;
+                });
+                document.querySelector(".btn-submit").disabled = false;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById("booking-modal").classList.remove("show");
+        }
+
+        // 🚀 UX優化：預約按鈕狀態回饋
+        async function submitBooking() {
+            const btn = document.querySelector(".btn-submit");
+            const originalText = btn.innerText;
+            
+            // 1. 鎖住按鈕
+            btn.innerText = "🔄 處理中...";
+            btn.disabled = true;
+
+            const time = document.getElementById("inp-time").value;
+            const child = document.getElementById("inp-child").value;
+            const note = document.getElementById("inp-note").value;
+
+            if (!child) { alert("請填寫孩童資訊"); btn.innerText=originalText; btn.disabled=false; return; }
+
+            const data = {
+                action: "book",
+                userName: userProfile.displayName,
+                companion: selectedWorker.name,
+                price: selectedWorker.rate,
+                bookingTime: time,
+                childInfo: child,
+                note: note
+            };
+
+            try {
+                await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
+                alert("✅ 預約成功！請等待夥伴確認。");
+                closeModal();
+            } catch (err) {
+                alert("❌ 預約失敗，請檢查網路");
+            } finally {
+                // 2. 恢復按鈕 (不管成功失敗)
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
         main();
     </script>
 </body>
