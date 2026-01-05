@@ -1,433 +1,117 @@
-<title>孩友友 - 尋找陪玩夥伴</title>
-<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<style>
-        /* 保持原本漂亮的 V2.5 CSS */
-body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; padding-bottom: 80px; color: #333; }
-        
-        /* 標題與篩選區 */
-h2 { color: #333; margin-bottom: 15px; font-size: 22px; font-weight: 800; }
-.filter-bar { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
-.filter-tag { background: white; padding: 8px 16px; border-radius: 20px; border: 1px solid #eee; color: #666; font-size: 14px; white-space: nowrap; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-.filter-tag.active { background: #06c755; color: white; border-color: #06c755; font-weight: bold; box-shadow: 0 4px 10px rgba(6, 199, 85, 0.3); }
-
-        /* 列表區 */
-.worker-list { display: grid; gap: 15px; }
-.card { background: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; align-items: center; transition: transform 0.1s; border: 1px solid #f0f0f0; }
-.card:active { transform: scale(0.98); background: #fafafa; }
-        
-.avatar { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; margin-right: 15px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-.info { flex: 1; overflow: hidden; }
-.name { font-size: 17px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; color: #333; }
-.rating { font-size: 12px; color: #f57c00; margin-left: 6px; background: #fff3e0; padding: 2px 6px; border-radius: 6px; display: flex; align-items: center; }
-.tags { font-size: 13px; color: #888; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.price { font-size: 16px; color: #06c755; font-weight: 800; }
-        
-.btn-book { background-color: #06c755; color: white; border: none; padding: 8px 20px; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(6, 199, 85, 0.2); transition: background 0.2s; }
-        .btn-book:active { background-color: #05a044; }
-
-        /* 預約彈窗 */
-.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: end; z-index: 2000; backdrop-filter: blur(2px); }
-.modal.show { display: flex; }
-.modal-content { background: white; width: 100%; max-width: 500px; padding: 25px; border-radius: 24px 24px 0 0; animation: slideUp 0.3s cubic-bezier(0.25, 1, 0.5, 1); max-height: 90vh; overflow-y: auto; }
-@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        
-        /* 表單元件 */
-label { display: block; font-size: 14px; font-weight: bold; color: #555; margin: 15px 0 8px 0; }
-input, textarea, select { width: 100%; padding: 14px; border: 1px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 16px; background: #f9f9f9; outline: none; transition: border 0.2s; }
-        input:focus, textarea:focus, select:focus { border-color: #06c755; background: #fff; }
-        
-.row { display: flex; gap: 12px; }
-.col { flex: 1; }
-
-.price-summary { background: #e8f5e9; padding: 15px; border-radius: 12px; margin: 20px 0; display: flex; justify-content: space-between; align-items: center; border: 1px solid #c8e6c9; }
-.price-label { color: #2e7d32; font-size: 14px; font-weight: bold; }
-.total-price { font-size: 24px; font-weight: 900; color: #06c755; }
-
-.btn-submit { width: 100%; padding: 16px; background: #06c755; color: white; border: none; border-radius: 16px; font-size: 18px; font-weight: bold; margin-top: 10px; cursor: pointer; box-shadow: 0 4px 15px rgba(6, 199, 85, 0.3); }
-.btn-submit:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
-.close-btn { float: right; font-size: 24px; cursor: pointer; color: #ddd; margin-top: -10px; margin-right: -5px; padding: 5px; }
-
-        /* 骨架屏 */
-.skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; color: transparent !important; border-radius: 6px; }
-@keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-.skeleton-text { height: 16px; margin-bottom: 6px; width: 60%; background: #eee; }
-.skeleton-avatar { width: 75px; height: 75px; background: #eee; border-radius: 50%; }
-        
-        /* 支付確認遮罩 */
-        #payment-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>孩友友 - 尋找陪玩夥伴</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; padding-bottom: 80px; }
+        .card { background: white; padding: 15px; border-radius: 16px; margin-bottom: 15px; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .avatar { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; margin-right: 15px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .name { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+        .btn-book { background: #06c755; color: white; border: none; padding: 8px 20px; border-radius: 25px; font-weight: bold; margin-left: auto; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: flex-end; }
+        .modal.show { display: flex; }
+        .modal-content { background: white; width: 100%; padding: 25px; border-radius: 24px 24px 0 0; }
+        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; height: 100px; margin-bottom: 10px; border-radius: 10px; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        #payment-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         #payment-overlay.hidden { display: none; }
-</style>
+    </style>
 </head>
 <body>
+    <div id="payment-overlay" class="hidden">💳正在確認付款，請稍候...</div>
+    <h2 style="margin-left:5px;">🔍 尋找陪玩夥伴</h2>
+    <div id="worker-list"></div>
 
-    <div id="payment-overlay" class="hidden">
-        <div style="font-size: 40px; margin-bottom: 20px;">💳</div>
-        <h3 style="margin:0;">正在確認付款...</h3>
-        <p style="color:#666;">請勿關閉視窗</p>
+    <div id="booking-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-worker-name">預約</h3>
+            <label>預約日期 (未來二週)</label><select id="inp-time"></select>
+            <label>時數</label><select id="inp-duration" onchange="updatePrice()"><option value="1">1h</option><option value="2">2h</option><option value="3">3h</option></select>
+            <label>孩童資訊</label><input type="text" id="inp-child" placeholder="例如：一位3歲女孩">
+            <label>備註需求</label><textarea id="inp-note" rows="2"></textarea>
+            <div style="margin:20px 0; font-size: 18px; font-weight:bold;">付款金額：<span id="total-price" style="color:#06c755;">$0</span></div>
+            <button class="btn-book" style="width:100%; padding:15px; font-size:18px;" onclick="initPayment()">前往 LINE Pay 付款</button>
+            <button onclick="closeModal()" style="width:100%; margin-top:10px; border:none; background:none; color:#999;">取消</button>
+        </div>
     </div>
 
-<h2 style="margin-left:5px;">🔍 尋找陪玩夥伴</h2>
+    <script>
+        const LIFF_ID = "2008808827-DzeTt84n";
+        const SCRIPT_URL = "在此填入您的_GAS_URL";
+        let allWorkers = [], userProfile = null, selectedWorker = null;
 
-<div class="filter-bar">
-@@ -77,71 +72,67 @@ <h2 style="margin-left:5px;">🔍 尋找陪玩夥伴</h2>
-<div class="modal-content">
-<span class="close-btn" onclick="closeModal()">×</span>
-<h3 id="modal-worker-name" style="margin-top:0; font-size: 20px;">預約</h3>
-            <p style="color:#888; font-size:14px; margin-bottom:20px;">請選擇想預約的日期與服務時長。</p>
-            <p style="color:#888; font-size:14px; margin-bottom:20px;">確認後將跳轉至 LINE Pay 付款。</p>
-
-<div class="row">
-<div class="col" style="flex:2">
-<label>預約日期 (未來兩週)</label>
-                    <select id="inp-time">
-                        <option>載入時段中...</option>
-                    </select>
-                    <select id="inp-time"><option>載入中...</option></select>
-</div>
-<div class="col" style="flex:1">
-<label>時數</label>
-<select id="inp-duration">
-                        <option value="1">1 小時</option>
-                        <option value="1.5">1.5 小時</option>
-                        <option value="2">2 小時</option>
-                        <option value="2.5">2.5 小時</option>
-                        <option value="3">3 小時</option>
-                        <option value="4">4 小時</option>
-                        <option value="1">1h</option><option value="1.5">1.5h</option><option value="2">2h</option>
-                        <option value="2.5">2.5h</option><option value="3">3h</option><option value="4">4h</option>
-</select>
-</div>
-</div>
-
-            <label>孩童資訊 (年齡/性別)</label>
-            <input type="text" id="inp-child" placeholder="例如：5歲 小男生，比較怕生">
-            <label>孩童資訊</label>
-            <input type="text" id="inp-child" placeholder="例如：5歲 小男生">
-
-            <label>給夥伴的備註</label>
-            <textarea id="inp-note" rows="3" placeholder="例如：希望可以帶畫筆來..."></textarea>
-            <label>備註需求</label>
-            <textarea id="inp-note" rows="3" placeholder="例如：需要幫忙看功課"></textarea>
-
-<div class="price-summary">
-                <span class="price-label">預估金額</span>
-                <span class="price-label">付款金額</span>
-<span id="total-price" class="total-price">$0</span>
-</div>
-
-            <button class="btn-submit" onclick="submitBooking()">確認預約</button>
-            <button class="btn-submit" onclick="initPayment()">前往 LINE Pay 付款</button>
-</div>
-</div>
-
-<script>
-const LIFF_ID = "2008808827-DzeTt84n"; 
-        // 👇 您的 Apps Script 網址
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec"; 
-
-let allWorkers = [];
-let userProfile = null;
-let selectedWorker = null;
-
-        // 骨架屏渲染 (極速感)
-        function renderSkeleton() {
-            const list = document.getElementById("worker-list");
-        function renderSkeleton() { /* ...同前... */ 
-             const list = document.getElementById("worker-list");
-let html = "";
-for(let i=0; i<4; i++) {
-                html += `
-                <div class="card">
-                    <div class="skeleton-avatar skeleton"></div>
-                    <div class="info">
-                        <div class="name skeleton skeleton-text" style="width:40%"></div>
-                        <div class="tags skeleton skeleton-text"></div>
-                        <div class="price skeleton skeleton-text" style="width:30%"></div>
-                    </div>
-                </div>`;
-                html += `<div class="card"><div class="skeleton-avatar skeleton"></div><div class="info"><div class="name skeleton skeleton-text" style="width:40%"></div><div class="tags skeleton skeleton-text"></div><div class="price skeleton skeleton-text" style="width:30%"></div></div></div>`;
-}
-list.innerHTML = html;
-}
-
-async function main() {
-            // 🔥 1. 檢查是否為付款回調
+        async function main() {
+            renderSkeleton();
             const urlParams = new URLSearchParams(window.location.search);
-            const transactionId = urlParams.get('transactionId');
-
-            if (transactionId) {
-                // 如果有 transactionId，代表剛從 LINE Pay 回來
-                document.getElementById("payment-overlay").classList.remove("hidden");
-                await confirmPayment(transactionId);
-                return; // 停止執行後續，專注處理付款
-            }
-
-            // 正常載入流程
-renderSkeleton();
-try {
-await liff.init({ liffId: LIFF_ID });
-@@ -150,11 +141,10 @@ <h3 id="modal-worker-name" style="margin-top:0; font-size: 20px;">預約</h3>
-loadWorkers();
-} catch (err) { alert("初始化失敗：" + err); }
-
-            // 監聽時數變更，即時算錢
-document.getElementById("inp-duration").addEventListener("change", updatePrice);
-}
-
-        async function loadWorkers() {
-        async function loadWorkers() { /* ...同前... */ 
-try {
-const res = await fetch(SCRIPT_URL + "?action=getWorkers");
-const workers = await res.json();
-@@ -163,174 +153,132 @@ <h3 id="modal-worker-name" style="margin-top:0; font-size: 20px;">預約</h3>
-} catch (err) { document.getElementById("worker-list").innerHTML = `<p style="text-align:center; color:#999; padding:20px;">😢 暫時無法讀取列表，請重新整理</p>`; }
-}
-
-        function renderWorkers(workers) {
-        function renderWorkers(workers) { /* ...同前... */ 
-const list = document.getElementById("worker-list");
-list.innerHTML = "";
-if (workers.length === 0) { list.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">目前沒有符合條件的夥伴</p>`; return; }
-
-workers.forEach(w => {
-                let ratingHtml = "";
-                let displayName = w.name;
-                let displayTags = w.tags || "";
-                
-                // 解析星星
-                if(displayTags.includes("⭐")) {
-                    const match = displayTags.match(/⭐(\d+\.\d+)/);
-                    if(match) {
-                        ratingHtml = `<span class="rating">⭐ ${match[1]}</span>`;
-                        displayTags = displayTags.replace(/⭐\d+\.\d+/, "").trim(); 
-                    }
-                }
-
-                // 安全處理頭像
-                let ratingHtml = ""; let displayName = w.name; let displayTags = w.tags || "";
-                if(displayTags.includes("⭐")) { const match = displayTags.match(/⭐(\d+\.\d+)/); if(match) { ratingHtml = `<span class="rating">⭐ ${match[1]}</span>`; displayTags = displayTags.replace(/⭐\d+\.\d+/, "").trim(); } }
-const photoUrl = w.photo && w.photo.startsWith("http") ? w.photo : "https://via.placeholder.com/70?text=No+Image";
-
-                const div = document.createElement("div");
-                div.className = "card";
-                div.innerHTML = `
-                    <img class="avatar" src="${photoUrl}" onerror="this.src='https://via.placeholder.com/70?text=Error'">
-                    <div class="info">
-                        <div class="name">${displayName} ${ratingHtml}</div>
-                        <div class="tags">${displayTags}</div>
-                        <div class="price">$${w.rate} <span style="font-size:12px;color:#999;font-weight:normal;">/ 小時</span></div>
-                    </div>
-                    <button class="btn-book" onclick='openBooking(${JSON.stringify(w)})'>預約</button>
-                `;
-                const div = document.createElement("div"); div.className = "card";
-                div.innerHTML = `<img class="avatar" src="${photoUrl}"><div class="info"><div class="name">${displayName} ${ratingHtml}</div><div class="tags">${displayTags}</div><div class="price">$${w.rate} <span style="font-size:12px;color:#999;font-weight:normal;">/ 小時</span></div></div><button class="btn-book" onclick='openBooking(${JSON.stringify(w)})'>預約</button>`;
-list.appendChild(div);
-});
-}
-
-        function filterWorkers(tag, btn) {
-            document.querySelectorAll(".filter-tag").forEach(el => el.classList.remove("active"));
-            btn.classList.add("active");
-            if (tag === 'all') renderWorkers(allWorkers);
-            else renderWorkers(allWorkers.filter(w => (w.tags || "").includes(tag)));
+            if (urlParams.get('transactionId')) { document.getElementById("payment-overlay").classList.remove("hidden"); return; }
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                userProfile = await liff.getProfile();
+                loadWorkers();
+            } catch (err) { console.error(err); }
         }
 
-        // 🔥 UX 核心優化：日期產生器
-        // 把 "週一" 變成 "01/05 (一)"，讓家長更有概念
-        function generateDateOptions(schedule) {
-            const dayMap = { "週日": 0, "週一": 1, "週二": 2, "週三": 3, "週四": 4, "週五": 5, "週六": 6 };
-            const today = new Date();
-            let options = [];
+        function renderSkeleton() { document.getElementById("worker-list").innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>'; }
 
-            // 遍歷陪玩員的所有時段 (ex: ["週一 09:00", "週一 09:30"])
-        function filterWorkers(tag, btn) { document.querySelectorAll(".filter-tag").forEach(el => el.classList.remove("active")); btn.classList.add("active"); if (tag === 'all') renderWorkers(allWorkers); else renderWorkers(allWorkers.filter(w => (w.tags || "").includes(tag))); }
-        function generateDateOptions(schedule) { /* ...同前... */ 
-             const dayMap = { "週日": 0, "週一": 1, "週二": 2, "週三": 3, "週四": 4, "週五": 5, "週六": 6 };
-            const today = new Date(); let options = [];
-schedule.forEach(slot => {
-                const parts = slot.split(" ");
-                if (parts.length < 2) return;
-                
-                const dayStr = parts[0];
-                const timeStr = parts[1];
-                const parts = slot.split(" "); if (parts.length < 2) return;
-                const dayStr = parts[0]; const timeStr = parts[1];
-if (!dayMap.hasOwnProperty(dayStr)) return;
-
-const targetDayIndex = dayMap[dayStr];
-                
-                // 往後找 14 天
-for (let i = 0; i < 14; i++) {
-                    const futureDate = new Date();
-                    futureDate.setDate(today.getDate() + i);
-                    
-                    const futureDate = new Date(); futureDate.setDate(today.getDate() + i);
-if (futureDate.getDay() === targetDayIndex) {
-                        // 格式化日期
-const month = (futureDate.getMonth() + 1).toString().padStart(2, '0');
-const date = futureDate.getDate().toString().padStart(2, '0');
-const dayShort = dayStr.replace("週", ""); 
-                        
-                        // 組合顯示文字
-const displayDate = `${month}/${date} (${dayShort}) ${timeStr}`;
-                        const fullDate = `${futureDate.getFullYear()}/${month}/${date} (${dayShort}) ${timeStr}`; // 實際送出的值
-                        
-                        // 產生時間戳記用於排序 (確保日期近的在上面)
-                        const fullDate = `${futureDate.getFullYear()}/${month}/${date} (${dayShort}) ${timeStr}`;
-const sortKey = futureDate.getTime() + parseInt(timeStr.replace(":", ""));
-
-                        options.push({
-                            val: fullDate,
-                            display: displayDate,
-                            sort: sortKey
-                        });
-                        options.push({ val: fullDate, display: displayDate, sort: sortKey });
-}
-}
-});
-
-            // 排序：日期近 -> 遠，時間早 -> 晚
-options.sort((a, b) => a.sort - b.sort);
-return options;
-}
+        async function loadWorkers() {
+            const res = await fetch(SCRIPT_URL + "?action=getWorkers");
+            allWorkers = await res.json();
+            document.getElementById("worker-list").innerHTML = allWorkers.map(w => `
+                <div class="card">
+                    <img class="avatar" src="${w.photo || 'https://via.placeholder.com/75'}">
+                    <div class="info">
+                        <div class="name">${w.name}</div>
+                        <div style="color:#888; font-size:13px;">${w.tags || '專業服務'}</div>
+                        <div style="color:#06c755; font-weight:bold;">$${w.rate}/hr</div>
+                    </div>
+                    <button class="btn-book" onclick='openBooking(${JSON.stringify(w)})'>預約</button>
+                </div>
+            `).join('');
+        }
 
         function openBooking(worker) {
             selectedWorker = worker;
             document.getElementById("modal-worker-name").innerText = "預約 " + worker.name;
+            const schedule = JSON.parse(worker.schedule || "[]");
+            // 日期產生器邏輯
+            document.getElementById("inp-time").innerHTML = generateOptions(schedule).map(o => `<option value="${o}">${o}</option>`).join('') || '<option>暫無時段</option>';
             document.getElementById("booking-modal").classList.add("show");
-            
-            const sel = document.getElementById("inp-time");
-            sel.innerHTML = "<option>計算時段中...</option>";
-            
-            let schedule = [];
-            try { schedule = JSON.parse(worker.schedule); } catch(e) {}
-
-            if (!schedule || schedule.length === 0) {
-                sel.innerHTML = "<option>此夥伴暫無可預約時段</option>";
-                document.querySelector(".btn-submit").disabled = true;
-            } else {
-                // 呼叫日期產生器
-        function openBooking(worker) { /* ...同前... */ 
-            selectedWorker = worker; document.getElementById("modal-worker-name").innerText = "預約 " + worker.name; document.getElementById("booking-modal").classList.add("show");
-            const sel = document.getElementById("inp-time"); sel.innerHTML = "<option>計算時段中...</option>";
-            let schedule = []; try { schedule = JSON.parse(worker.schedule); } catch(e) {}
-            if (!schedule || schedule.length === 0) { sel.innerHTML = "<option>此夥伴暫無可預約時段</option>"; document.querySelector(".btn-submit").disabled = true; } else {
-const dateOptions = generateDateOptions(schedule);
-                
-                if (dateOptions.length === 0) {
-                    sel.innerHTML = "<option>近期無符合時段</option>";
-                    document.querySelector(".btn-submit").disabled = true;
-                } else {
-                    sel.innerHTML = "";
-                    dateOptions.forEach(opt => {
-                        sel.innerHTML += `<option value="${opt.val}">${opt.display}</option>`;
-                    });
-                    document.querySelector(".btn-submit").disabled = false;
-                if (dateOptions.length === 0) { sel.innerHTML = "<option>近期無符合時段</option>"; document.querySelector(".btn-submit").disabled = true; } else {
-                    sel.innerHTML = ""; dateOptions.forEach(opt => { sel.innerHTML += `<option value="${opt.val}">${opt.display}</option>`; }); document.querySelector(".btn-submit").disabled = false;
-}
-}
-updatePrice();
-}
-
-        function updatePrice() {
-            if(!selectedWorker) return;
-            const hours = parseFloat(document.getElementById("inp-duration").value);
-            const total = Math.round(selectedWorker.rate * hours);
-            document.getElementById("total-price").innerText = "$" + total;
+            updatePrice();
         }
 
-        function updatePrice() { if(!selectedWorker) return; const hours = parseFloat(document.getElementById("inp-duration").value); const total = Math.round(selectedWorker.rate * hours); document.getElementById("total-price").innerText = "$" + total; }
-function closeModal() { document.getElementById("booking-modal").classList.remove("show"); }
+        function generateOptions(schedule) {
+            const dayMap = { "週日":0, "週一":1, "週二":2, "週三":3, "週四":4, "週五":5, "週六":6 };
+            let opts = [];
+            schedule.forEach(slot => {
+                const parts = slot.split(" ");
+                for(let i=0; i<14; i++) {
+                    const d = new Date(); d.setDate(d.getDate()+i);
+                    if(d.getDay() === dayMap[parts[0]]) opts.push(`${d.getMonth()+1}/${d.getDate()} (${parts[0].replace("週","")}) ${parts[1]}`);
+                }
+            });
+            return opts.sort();
+        }
 
-        async function submitBooking() {
-        // 🔥 1. 發起付款 (initPayment)
+        function updatePrice() { document.getElementById("total-price").innerText = "$" + (selectedWorker.rate * document.getElementById("inp-duration").value); }
+
         async function initPayment() {
-const btn = document.querySelector(".btn-submit");
-const originalText = btn.innerText;
-            btn.innerText = "🔄 處理中..."; btn.disabled = true;
-            btn.innerText = "🔄 連線 LINE Pay..."; btn.disabled = true;
-
-            const timeRaw = document.getElementById("inp-time").value; // ex: 2026/01/05 (一) 09:00
-            const timeRaw = document.getElementById("inp-time").value;
-const duration = document.getElementById("inp-duration").value;
-const child = document.getElementById("inp-child").value;
-const note = document.getElementById("inp-note").value;
-const totalPrice = document.getElementById("total-price").innerText.replace("$", "");
-
-            if (!child) { alert("請填寫孩童資訊以供夥伴評估"); btn.innerText=originalText; btn.disabled=false; return; }
-
-            // 🔥 組合給後端的字串：時間 + 時數
-            // 這樣陪玩員後台就能看到： "2026/01/05 (一) 09:00 (2小時)"
-            
-            if (!child) { alert("請填寫孩童資訊"); btn.innerText=originalText; btn.disabled=false; return; }
-            
-const fullBookingInfo = `${timeRaw} (${duration}小時)`;
-
-const data = {
-                action: "book",
-                action: "initPayment", // 呼叫後端發起付款
-userName: userProfile.displayName,
-companion: selectedWorker.name,
-price: totalPrice,
-                bookingTime: fullBookingInfo, 
-                bookingTime: fullBookingInfo,
-childInfo: child,
-                note: note
-                note: note,
-                productName: "陪玩服務: " + selectedWorker.name,
-                productImageUrl: selectedWorker.photo || ""
-};
-
-try {
-                await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
-                alert("✅ 預約申請已送出！\n\n夥伴確認接單後，您會收到 LINE 通知。");
-                closeModal();
-            } catch (err) { alert("❌ 預約失敗，請檢查網路連線"); } 
-            finally { btn.innerText = originalText; btn.disabled = false; }
-                const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
-                const result = await res.json();
-                
-                if (result.success) {
-                    // 🔥 拿到付款連結，跳轉出去！
-                    window.location.href = result.paymentUrl;
-                } else {
-                    alert("LINE Pay 發生錯誤: " + result.message);
-                    btn.innerText = originalText; btn.disabled = false;
-                }
-            } catch (err) { 
-                alert("連線失敗：" + err); 
-                btn.innerText = originalText; btn.disabled = false;
-            } 
+            const payload = {
+                action: "initPayment", userName: userProfile.displayName, companion: selectedWorker.name,
+                price: document.getElementById("total-price").innerText.replace("$",""),
+                bookingTime: document.getElementById("inp-time").value + " (" + document.getElementById("inp-duration").value + "h)",
+                childInfo: document.getElementById("inp-child").value,
+                productImageUrl: selectedWorker.photo
+            };
+            const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
+            const result = await res.json();
+            if (result.success) window.location.href = result.paymentUrl;
         }
 
-        // 🔥 2. 確認付款 (confirmPayment)
-        async function confirmPayment(transactionId) {
-            try {
-                const res = await fetch(SCRIPT_URL, { 
-                    method: "POST", 
-                    body: JSON.stringify({ 
-                        action: "confirmPayment", 
-                        transactionId: transactionId 
-                    }) 
-                });
-                const result = await res.json();
-                
-                if (result.success) {
-                    alert("✅ 付款成功！\n\n您已完成預約，請等待夥伴接單。");
-                    // 清除網址參數，回到乾淨的首頁
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    document.getElementById("payment-overlay").classList.add("hidden");
-                    renderSkeleton();
-                    loadWorkers();
-                } else {
-                    alert("❌ 付款確認失敗：" + result.message);
-                    document.getElementById("payment-overlay").classList.add("hidden");
-                }
-            } catch(e) {
-                alert("系統錯誤：" + e);
-                document.getElementById("payment-overlay").classList.add("hidden");
-            }
-}
-
-main();
+        function closeModal() { document.getElementById("booking-modal").classList.remove("show"); }
+        main();
+    </script>
+</body>
+</html>
