@@ -1,96 +1,59 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Momday 陪玩系統</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Momday 陪玩預約 (家長端)</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f0f2f5; margin: 0; padding: 15px; }
-        .user-card { background: white; padding: 15px; border-radius: 16px; display: flex; align-items: center; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .user-card img { width: 50px; height: 50px; border-radius: 50%; margin-right: 12px; border: 2px solid #06C755; }
-        .worker-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .worker-avatar { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; margin-right: 15px; }
-        .btn-book { background: #06C755; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; margin-left: auto; }
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 999; }
+        body { font-family: sans-serif; background: #f8f9fa; padding: 20px; }
+        .worker-card { background: white; border-radius: 16px; padding: 15px; margin-bottom: 12px; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .worker-card img { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; margin-right: 15px; border: 2px solid #06C755; }
+        .btn-book { margin-left: auto; background: #06C755; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div id="loading">讀取系統中...</div>
-
-    <div class="user-card">
-        <img id="my-avatar" src="">
-        <div><div id="my-name" style="font-weight:bold;">載入中...</div><div style="font-size:12px;color:#888;">Momday 歡迎您</div></div>
-    </div>
-
-    <div style="font-weight:bold; margin-bottom:10px;">預約陪玩夥伴</div>
-    <div id="worker-list"></div>
+    <h2 style="color:#333;">找陪玩夥伴</h2>
+    <div id="list">正在尋找附近上線中的夥伴...</div>
 
     <script>
-        const BACKEND_URL = "在此填入你的_GAS_EXEC_URL";
         const LIFF_ID = "2008808827-DzeTt84n";
-        let profile = {};
+        const SCRIPT_URL = "在此更換為你的_GAS_URL";
+        let profile = null;
 
-        async function main() {
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                if (!liff.isLoggedIn()) { liff.login(); return; }
-                profile = await liff.getProfile();
-
-                document.getElementById('my-avatar').src = profile.pictureUrl;
-                document.getElementById('my-name').innerText = profile.displayName;
-
-                // 核心：同步照片到 Users 表
-                await fetch(BACKEND_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: "register",
-                        userId: profile.userId,
-                        displayName: profile.displayName,
-                        pictureUrl: profile.pictureUrl
-                    })
-                });
-
-                loadWorkers();
-            } catch (e) { console.error(e); }
-            finally { document.getElementById('loading').style.display = 'none'; }
+        async function init() {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            profile = await liff.getProfile();
+            loadWorkers();
         }
 
         async function loadWorkers() {
-            const res = await fetch(BACKEND_URL, { method: 'POST', body: JSON.stringify({ action: "get_workers" }) });
+            const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "get_workers" }) });
             const result = await res.json();
-            const container = document.getElementById('worker-list');
-            container.innerHTML = result.data.map(w => `
+            const onlineOnes = result.data.filter(w => w.status === "Online");
+            document.getElementById('list').innerHTML = onlineOnes.map(w => `
                 <div class="worker-card">
-                    <img class="worker-avatar" src="${w.pictureUrl || 'https://via.placeholder.com/60'}">
-                    <div><div style="font-weight:bold;">${w.displayName}</div><div style="font-size:12px;color:#06C755;">認證夥伴</div></div>
-                    <button class="btn-book" onclick="book('${w.displayName}')">預約</button>
+                    <img src="${w.photo || 'https://via.placeholder.com/65'}">
+                    <div>
+                        <div style="font-weight:bold; font-size:16px;">${w.name}</div>
+                        <div style="color:#06C755; font-size:14px;">$${w.rate}/hr</div>
+                        <div style="color:#888; font-size:12px;">${w.tags || '專業服務'}</div>
+                    </div>
+                    <button class="btn-book" onclick="book('${w.name}', '${w.rate}')">預約</button>
                 </div>
-            `).join('');
+            `).join('') || "目前夥伴都在休息中，請稍後再試。";
         }
 
-        async function book(name) {
-            document.getElementById('loading').style.display = 'flex';
-            const res = await fetch(BACKEND_URL, {
-                method: 'POST',
-                body: JSON.stringify({
-                    action: "initPayment",
-                    userName: profile.displayName,
-                    companion: name,
-                    price: "100",
-                    bookingTime: new Date().toLocaleString(),
-                    childInfo: "系統測試", note: "無"
-                })
-            });
+        async function book(name, rate) {
+            const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ 
+                action: "initPayment", userName: profile.displayName, 
+                companion: name, price: rate, bookingTime: "自選時段", 
+                childInfo: "測試小孩", note: "無" 
+            }) });
             const data = await res.json();
-            if (data.success) {
-                window.location.href = data.paymentUrl;
-            } else {
-                alert("預約失敗");
-                document.getElementById('loading').style.display = 'none';
-            }
+            if (data.success) window.location.href = data.paymentUrl;
         }
-        window.onload = main;
+        init();
     </script>
 </body>
 </html>
