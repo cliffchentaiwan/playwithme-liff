@@ -1,353 +1,122 @@
+<!DOCTYPE html>
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>陪玩夥伴後台 (v2.0)</title> <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <title>陪玩夥伴後台 (v2.2)</title>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<style>
-body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; padding-bottom: 80px; color: #333; }
-.card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        
-        /* Header 優化：加入評分顯示 */
-.header { display: flex; align-items: center; margin-bottom: 20px; }
-        .avatar { width: 60px; height: 60px; border-radius: 50%; margin-right: 15px; object-fit: cover; border: 2px solid #eee; }
-        .avatar { width: 70px; height: 70px; border-radius: 50%; margin-right: 15px; object-fit: cover; border: 3px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .header-info { flex: 1; }
-        .rating-display { font-size: 14px; color: #f57c00; font-weight: bold; margin-top: 4px; display: flex; align-items: center; }
-        .rating-star { margin-right: 4px; font-size: 16px; }
-
-.badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
-.badge-gray { background: #eee; color: #666; }
-.badge-green { background: #e8f5e9; color: #06c755; }
-        .badge-orange { background: #fff3e0; color: #ef6c00; }
-        
-label { display: block; font-weight: bold; margin: 15px 0 5px; font-size: 14px; color: #555; }
-input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; background: #fafafa; font-size: 15px; }
-        select:disabled { background-color: #fff3e0; color: #ef6c00; border-color: #ffe0b2; font-weight: bold; opacity: 1; }
-
-.checklist-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
-.check-status { display: flex; align-items: center; }
-.check-icon { margin-right: 10px; font-size: 18px; color: #ddd; width: 24px; text-align: center;}
-.check-icon.done { color: #06c755; }
-        .btn-upload { background: #06c755; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold; }
-        .btn-upload { background: #06c755; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold; transition: all 0.2s; }
-        .btn-upload:disabled { background: #ccc; cursor: not-allowed; }
-
-#file-input { display: none; }
-.time-slot { background: #e3f2fd; color: #1565c0; padding: 10px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
-.btn-del { color: #d32f2f; font-weight: bold; cursor: pointer; padding: 5px; }
-        
-.tab-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #eee; display: flex; padding-bottom: 20px; z-index: 999; }
-.tab-item { flex: 1; text-align: center; padding: 10px; color: #999; cursor: pointer; font-size: 12px; }
-.tab-item.active-tab { color: #06c755; font-weight: bold; border-top: 2px solid #06c755; }
-.tab-icon { font-size: 20px; display: block; margin-bottom: 2px; }
-        .order-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #ccc; }
-        .order-card.pending { border-left-color: #ff9800; } 
-        .order-card.accepted { border-left-color: #06c755; }
-        .order-header { display: flex; justify-content: space-between; font-size: 14px; color: #666; margin-bottom: 10px; }
-        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-accept { flex: 1; background: #06c755; color: white; border: none; padding: 8px; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        .btn-reject { flex: 1; background: #ff5252; color: white; border: none; padding: 8px; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        .btn-main { width: 100%; padding: 14px; background-color: #06c755; color: white; border: none; border-radius: 30px; font-size: 16px; font-weight: bold; margin-top: 20px; cursor: pointer; }
-
-        .btn-main { width: 100%; padding: 14px; background-color: #06c755; color: white; border: none; border-radius: 30px; font-size: 16px; font-weight: bold; margin-top: 20px; cursor: pointer; transition: background 0.3s; }
-        .btn-main:disabled { background-color: #999; cursor: not-allowed; }
-
-        /* 骨架屏載入動畫 */
-        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; color: transparent !important; border-radius: 4px; }
-        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-.page { display: none; }
-.active { display: block; }
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: flex; justify-content: center; align-items: center; flex-direction: column; }
-        #loading.hidden { display: none; }
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: flex; justify-content: center; align-items: center; flex-direction: column; transition: opacity 0.5s; }
-        #loading.hidden { opacity: 0; pointer-events: none; }
-</style>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>夥伴後台 - Momday V2.4</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f5f5f5; margin: 0; padding: 20px; padding-bottom: 80px; }
+        .card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .avatar { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .tab-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; z-index: 1000; }
+        .tab-item { flex: 1; text-align: center; padding: 15px; font-size: 12px; }
+        .active { color: #06c755; font-weight: bold; border-top: 2px solid #06c755; }
+        .page { display: none; } .active-page { display: block; }
+        .order-card { border-left: 5px solid #ff9800; background: white; padding: 15px; margin: 10px 0; border-radius: 8px; }
+        .btn-action { padding: 8px 12px; border-radius: 8px; border: none; font-weight: bold; margin-right: 5px; cursor: pointer; }
+    </style>
 </head>
 <body>
+    <div id="loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:999;display:flex;justify-content:center;align-items:center;">🚀 系統載入中...</div>
 
-<div id="loading">
-        <p>🔄 系統讀取中 v2.0...</p>
-        <p>🚀 系統載入中 v2.2...</p>
-</div>
-
-<div id="tab-profile" class="page active">
-        <h2 style="margin-left: 5px;">個人檔案 v2.0</h2> <div class="card">
+    <div id="tab-profile" class="page active-page">
+        <div class="card" style="display:flex; align-items:center;">
+            <img id="form-avatar" class="avatar" src="">
+            <div style="margin-left:15px;">
+                <h3 id="form-name" style="margin:0;">載入中...</h3>
+                <select id="inp-online-status" style="margin-top:5px;"><option value="Offline">🔴 休息中</option><option value="Online">🟢 開放接單</option></select>
+            </div>
+        </div>
         <div class="card">
-<div class="header">
-                <img id="form-avatar" class="avatar" src="">
-                <div style="flex:1">
-                    <h3 id="form-name" style="margin:0 0 5px 0;"></h3>
-                    <span id="form-status" class="badge badge-gray">未驗證</span>
-                <img id="form-avatar" class="avatar skeleton" src="">
-                <div class="header-info">
-                    <h3 id="form-name" class="skeleton" style="margin:0 0 5px 0; display:inline-block; min-width: 100px;">載入中</h3>
-                    <div style="margin-bottom: 5px;">
-                        <span id="form-status" class="badge badge-gray">讀取狀態...</span>
-                    </div>
-                    <div id="rating-area" class="rating-display" style="display:none;">
-                        <span class="rating-star">⭐</span>
-                        <span id="rating-score">0.0</span>
-                        <span style="color:#999; font-weight:normal; margin-left:5px;">(綜合評分)</span>
-                    </div>
-</div>
-</div>
-<div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-top:10px;">
-@@ -61,6 +82,7 @@ <h3 id="form-name" style="margin:0 0 5px 0;"></h3>
-<option value="Offline">🔴 休息中 (隱藏)</option>
-<option value="Online">🟢 開放接單 (上線)</option>
-</select>
-                <p id="status-hint" style="font-size:12px; color:#ff9800; margin-top:5px; display:none;">⚠️ 資料審核中，通過後才能開啟接單。</p>
-</div>
-</div>
+            <h3>📝 基本設定</h3>
+            時薪：<input type="number" id="inp-rate" style="width:100%; padding:10px;">
+            銀行帳號：<input type="text" id="inp-bank" style="width:100%; padding:10px;">
+            自我介紹：<textarea id="inp-intro" rows="3" style="width:100%; padding:10px;"></textarea>
+        </div>
+        <div class="card">
+            <h3>🛡️ 證件驗證</h3>
+            <button onclick="triggerUpload('police')">上傳良民證</button>
+            <span id="police-status" style="font-size:12px; color:#999;">尚未上傳</span>
+        </div>
+        <button style="width:100%; padding:15px; background:#06c755; color:white; border-radius:30px; border:none; font-size:16px; font-weight:bold;" onclick="saveProfile()">儲存更新</button>
+    </div>
 
-@@ -107,59 +129,126 @@ <h2 style="margin-left: 5px;">訂單管理</h2>
+    <div id="tab-orders" class="page">
+        <h2 style="padding:15px;">📋 預約訂單管理</h2>
+        <div id="order-list">載入中...</div>
+    </div>
 
-<script>
-const LIFF_ID = "2008808827-DzeTt84n"; 
-        // 👇 請確認這個網址是您「最新部署」的 Apps Script 網址
-        // 👇 這裡還是填入您最新的 Apps Script 網址
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec"; 
+    <div class="tab-bar">
+        <div class="tab-item active" onclick="switchTab('profile', this)">👤 檔案</div>
+        <div class="tab-item" onclick="switchTab('orders', this)">📄 訂單</div>
+    </div>
 
-let userProfile = null;
-let mySchedule = [];
-let currentUploadType = "";
+    <input type="file" id="file-input" style="display:none" onchange="handleFileSelect()">
 
-async function main() {
-            // 初始化時段
-const timeSelect = document.getElementById("sel-time");
-for (let i = 8; i <= 21; i++) { 
-let h = i < 10 ? "0" + i : i;
-                timeSelect.innerHTML += `<option value="${h}:00">${h}:00</option>`;
-                timeSelect.innerHTML += `<option value="${h}:30">${h}:30</option>`;
-                timeSelect.innerHTML += `<option value="${h}:00">${h}:00</option><option value="${h}:30">${h}:30</option>`;
-}
-            
+    <script>
+        const LIFF_ID = "2008808827-DzeTt84n";
+        const SCRIPT_URL = "在此填入您的_GAS_URL";
+        let userProfile = null, mySchedule = [];
 
-try {
-await liff.init({ liffId: LIFF_ID });
-if (!liff.isLoggedIn()) { liff.login(); return; }
-userProfile = await liff.getProfile();
-                if(!userProfile) throw new Error("無法取得使用者資料");
-
-                // 🚀 UX優化：先讀取快取 (Local Storage)，讓畫面看起來是「秒開」
-                loadFromCache();
-                
-                // 然後背景去抓新資料
-checkLogin();
-} catch (err) {
-                alert("系統初始化錯誤: " + err);
-                alert("系統錯誤: " + err);
-document.getElementById("loading").classList.add("hidden");
-}
-}
-
-        // ✨ 新功能：從手機暫存讀取資料
-        function loadFromCache() {
-            const cachedData = localStorage.getItem("worker_data_" + userProfile.userId);
-            if (cachedData) {
-                console.log("讀取快取資料...");
-                const d = JSON.parse(cachedData);
-                renderUI(d);
-                document.getElementById("loading").classList.add("hidden"); // 有快取就先關閉 Loading
-            }
-        }
-
-async function checkLogin() {
-try {
-const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "login", userId: userProfile.userId }) });
-                const text = await res.text();
-                if (text.trim().startsWith("<")) { alert("後端連線異常，請檢查 Apps Script 部署"); document.getElementById("loading").classList.add("hidden"); return; }
-                const result = await res.json();
-
-                const result = JSON.parse(text);
-document.getElementById("loading").classList.add("hidden");
-                document.getElementById("form-avatar").src = userProfile.pictureUrl;
-                document.getElementById("form-name").innerText = userProfile.displayName;
-
-if (result.isRegistered) {
-const d = result.data;
-                    document.getElementById("inp-rate").value = d.rate;
-                    document.getElementById("inp-tags").value = d.tags;
-                    document.getElementById("inp-intro").value = d.intro;
-                    document.getElementById("inp-bank").value = d.bank;
-                    document.getElementById("inp-online-status").value = d.status;
-                    if(d.verified==="Verified") { document.getElementById("form-status").innerText="已認證"; document.getElementById("form-status").className="badge badge-green"; }
-                    if(d.docFront) document.getElementById("icon-front").className="check-icon done";
-                    if(d.docBack) document.getElementById("icon-back").className="check-icon done";
-                    if(d.docPolice) document.getElementById("icon-police").className="check-icon done";
-                    try { mySchedule = JSON.parse(d.schedule); } catch(e){ mySchedule=[]; }
-                    renderSchedule();
-                    // 更新快取
-                    localStorage.setItem("worker_data_" + userProfile.userId, JSON.stringify(d));
-                    renderUI(d);
-                } else {
-                    // 第一次來的，顯示基本頭像
-                    document.getElementById("form-avatar").src = userProfile.pictureUrl;
-                    document.getElementById("form-name").innerText = userProfile.displayName;
-                    document.getElementById("form-avatar").classList.remove("skeleton");
-                    document.getElementById("form-name").classList.remove("skeleton");
-                }
-            } catch (err) { 
-                console.error(err);
-                // 如果沒快取又連線失敗，才報錯
-                if(!localStorage.getItem("worker_data_" + userProfile.userId)) {
-                    document.getElementById("loading").classList.add("hidden");
-                    alert("連線不穩，請重新整理");
-                }
-            }
-        }
-
-        // ✨ 把畫面渲染邏輯獨立出來
-        function renderUI(d) {
-            document.getElementById("form-avatar").src = userProfile.pictureUrl; // 這裡還是用 LINE 的最新頭像
-            document.getElementById("form-avatar").classList.remove("skeleton");
-            
-            document.getElementById("form-name").innerText = userProfile.displayName;
-            document.getElementById("form-name").classList.remove("skeleton");
-
-            document.getElementById("inp-rate").value = d.rate;
-            document.getElementById("inp-tags").value = d.tags;
-            document.getElementById("inp-intro").value = d.intro;
-            document.getElementById("inp-bank").value = d.bank;
-            
-            // 處理評分 (從 tags 裡面解析 ⭐分數)
-            if (d.tags && d.tags.includes("⭐")) {
-                const match = d.tags.match(/⭐(\d+\.\d+)/);
-                if (match) {
-                    document.getElementById("rating-score").innerText = match[1];
-                    document.getElementById("rating-area").style.display = "flex";
-}
-            } catch (err) { document.getElementById("loading").classList.add("hidden"); alert("連線錯誤：" + err); }
-            } else {
-                // 如果完全沒有評分，顯示 0.0 或隱藏，這邊選擇顯示
-                document.getElementById("rating-area").style.display = "flex";
-            }
-
-            // 處理狀態鎖定
-            const statusSelect = document.getElementById("inp-online-status");
-            const statusHint = document.getElementById("status-hint");
-            const statusBadge = document.getElementById("form-status");
-
-            if (d.verified === "Verified") {
-                statusSelect.disabled = false;
-                statusSelect.value = d.status;
-                statusHint.style.display = "none";
-                statusBadge.innerText = "已認證";
-                statusBadge.className = "badge badge-green";
-            } else {
-                statusSelect.innerHTML = "<option>🟡 資料審核中</option>";
-                statusSelect.disabled = true;
-                statusHint.style.display = "block";
-                statusBadge.innerText = "審核中";
-                statusBadge.className = "badge badge-orange";
-            }
-
-            if(d.docFront) document.getElementById("icon-front").className="check-icon done";
-            if(d.docBack) document.getElementById("icon-back").className="check-icon done";
-            if(d.docPolice) document.getElementById("icon-police").className="check-icon done";
-            try { mySchedule = JSON.parse(d.schedule); } catch(e){ mySchedule=[]; }
-            renderSchedule();
-}
-
-function switchTab(tab) {
-@@ -175,6 +264,7 @@ <h2 style="margin-left: 5px;">訂單管理</h2>
-}
-}
-
-        // 這裡可以省略 loadOrders 的優化，先專注在 Profile
-async function loadOrders() {
-const container = document.getElementById("order-list");
-container.innerHTML = '<p style="text-align:center; color:#999;">重新整理中...</p>';
-@@ -188,7 +278,7 @@ <h2 style="margin-left: 5px;">訂單管理</h2>
-}
-result.orders.forEach(order => {
-let statusBadge = `<span style="color:orange">待確認</span>`;
-                    let buttons = `<button class="btn-reject" onclick="updateOrder(${order.row}, '已拒絕')">拒絕</button><button class="btn-accept" onclick="updateOrder(${order.row}, '已接單')">接單</button>`;
-                    let buttons = `<button class="btn-reject" onclick="updateOrder(${order.row}, '已拒絕', this)">拒絕</button><button class="btn-accept" onclick="updateOrder(${order.row}, '已接單', this)">接單</button>`;
-if (order.status === '已接單') { statusBadge = `<span style="color:green">✅ 已接單</span>`; buttons = `<button style="width:100%;background:#eee;border:none;padding:8px;border-radius:5px;" disabled>等待服務開始</button>`; }
-else if (order.status === '已拒絕') { statusBadge = `<span style="color:red">❌ 已拒絕</span>`; buttons = ``; }
-else if (order.status === '已完成') { statusBadge = `<span style="color:gray">🏁 已完成</span>`; buttons = `<div style="font-size:12px;color:#f57c00;">★ ${order.rating||""} ${order.comment||""}</div>`; }
-@@ -207,8 +297,16 @@ <h2 style="margin-left: 5px;">訂單管理</h2>
-} catch (err) { container.innerHTML = "載入失敗"; }
-}
-
-        async function updateOrder(row, status) {
-        // 🚀 UX優化：按鈕點擊後變色 disabled
-        async function updateOrder(row, status, btnElement) {
-if(!confirm(`確定要變更為「${status}」嗎？`)) return;
-            
-            const originalText = btnElement.innerText;
-            btnElement.innerText = "處理中...";
-            btnElement.disabled = true;
-            // 把旁邊的按鈕也鎖住，避免連按
-            btnElement.parentElement.querySelectorAll("button").forEach(b => b.disabled = true);
-
-await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "updateOrderStatus", row: row, newStatus: status }) });
-alert("更新成功"); loadOrders();
-}
-@@ -222,27 +320,47 @@ <h2 style="margin-left: 5px;">訂單管理</h2>
-const c = document.getElementById("schedule-list"); c.innerHTML = "";
-mySchedule.forEach((s, i) => c.innerHTML += `<div class="time-slot"><span>🕒 ${s}</span><span class="btn-del" onclick="removeSlot(${i})">✕</span></div>`);
-}
-
-        // 🚀 UX優化：儲存按鈕狀態回饋
-async function saveProfile() {
-if(!userProfile) return;
-            const btn = document.querySelector(".btn-main"); btn.innerText="儲存中..."; btn.disabled=true;
-            const btn = document.querySelector(".btn-main"); 
-            const originalText = btn.innerText;
-            btn.innerText = "⏳ 儲存中..."; 
-            btn.disabled = true;
-            btn.style.background = "#999";
-
-const data = { action: "updateProfile", userId: userProfile.userId, name: userProfile.displayName, photo: userProfile.pictureUrl, rate: document.getElementById("inp-rate").value, tags: document.getElementById("inp-tags").value, intro: document.getElementById("inp-intro").value, bank: document.getElementById("inp-bank").value, status: document.getElementById("inp-online-status").value, schedule: JSON.stringify(mySchedule) };
-            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
-            alert("✅ 資料更新成功"); btn.innerText="儲存更新"; btn.disabled=false;
-            
+        async function init() {
             try {
-                await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
-                // 更新成功後，也要更新本地快取
-                const currentCache = JSON.parse(localStorage.getItem("worker_data_" + userProfile.userId) || "{}");
-                const newData = { ...currentCache, ...data, verified: currentCache.verified || "Pending" }; // 合併資料
-                localStorage.setItem("worker_data_" + userProfile.userId, JSON.stringify(newData));
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                userProfile = await liff.getProfile();
+                
+                const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "login", userId: userProfile.userId, displayName: userProfile.displayName, pictureUrl: userProfile.pictureUrl }) });
+                const result = await res.json();
+                if (result.isRegistered) {
+                    const d = result.data;
+                    document.getElementById('inp-rate').value = d.rate;
+                    document.getElementById('inp-online-status').value = d.status;
+                    document.getElementById('inp-intro').value = d.intro;
+                    document.getElementById('inp-bank').value = d.bank;
+                    document.getElementById('form-avatar').src = userProfile.pictureUrl;
+                    document.getElementById('form-name').innerText = userProfile.displayName;
+                    mySchedule = JSON.parse(d.schedule || "[]");
+                    if(d.docPolice) document.getElementById('police-status').innerText = "✅ 已上傳";
+                }
+                document.getElementById('loading').style.display = 'none';
+                loadOrders();
+            } catch (err) { console.error(err); }
+        }
 
-                alert("✅ 資料更新成功"); 
-            } catch(e) {
-                alert("更新失敗，請檢查網路");
-            } finally {
-                btn.innerText = originalText; 
-                btn.disabled = false;
-                btn.style.background = "#06c755";
-            }
-}
+        async function saveProfile() {
+            const data = { action: "updateProfile", userId: userProfile.userId, name: userProfile.displayName, photo: userProfile.pictureUrl, rate: document.getElementById('inp-rate').value, status: document.getElementById('inp-online-status').value, intro: document.getElementById('inp-intro').value, bank: document.getElementById('inp-bank').value, schedule: JSON.stringify(mySchedule), tags: "認證陪玩" };
+            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
+            alert("✅ 更新成功，家長端已同步！");
+        }
 
-function triggerUpload(type) { 
-currentUploadType = type; 
-document.getElementById("file-input").click(); 
-}
+        async function loadOrders() {
+            const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getMyOrders", workerName: userProfile.displayName }) });
+            const result = await res.json();
+            document.getElementById("order-list").innerHTML = result.orders.map(o => `
+                <div class="order-card">
+                    <b>👶 ${o.child}</b> (${o.status})<br>
+                    家長：${o.parent}<br>時間：${o.bookingTime}<br>金額：$${o.price}<br>
+                    <div style="margin-top:10px;">
+                        <button class="btn-action" style="background:#e3f2fd; color:#1976d2;" onclick="updateStatus(${o.row}, '已接單')">接單</button>
+                        <button class="btn-action" style="background:#f3e5f5; color:#7b1fa2;" onclick="updateStatus(${o.row}, '服務中')">開始</button>
+                        <button class="btn-action" style="background:#e8f5e9; color:#2e7d32;" onclick="updateStatus(${o.row}, '已完成')">完成</button>
+                    </div>
+                </div>
+            `).join('') || "目前尚無新預約";
+        }
 
-        // 🔥 重點：這段代碼會告訴您「真實的錯誤原因」
-        // 🚀 UX優化：上傳按鈕狀態回饋
-function handleFileSelect() {
-const file = document.getElementById("file-input").files[0];
-if (!file) return;
+        async function updateStatus(row, status) {
+            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "updateOrderStatus", row: row, newStatus: status }) });
+            loadOrders();
+        }
 
-            // 限制檔案大小 (5MB)
-if (file.size > 5 * 1024 * 1024) {
-                alert("❌ 檔案太大！請使用小於 5MB 的照片 (或用 LINE 傳給自己壓縮一下)");
-                alert("❌ 檔案太大！請使用小於 5MB 的照片");
-return;
-}
-
-@@ -277,8 +395,7 @@ <h2 style="margin-left: 5px;">訂單管理</h2>
-if(currentUploadType==='police') document.getElementById("icon-police").className="check-icon done";
-btn.innerText = "已上傳";
-} else {
-                        // 🔥 這裡會顯示：Folder ID 錯誤 / 權限不足 / ...
-                        alert("❌ 上傳失敗：" + (result.error || "未知原因，請截圖給工程師"));
-                        alert("❌ 上傳失敗：" + (result.error || "未知原因"));
-btn.innerText = originalText;
-btn.disabled = false;
-}
+        function switchTab(tab, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-'+tab).classList.add('active-page');
+            el.classList.add('active');
+            if(tab==='orders') loadOrders();
+        }
+        init();
+    </script>
+</body>
+</html>
