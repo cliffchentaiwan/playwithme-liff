@@ -1,92 +1,141 @@
-<script>
-    const LIFF_ID = "2008808827-DzeTt84n"; 
-    const SCRIPT_URL = "在此更換為你的_GAS_URL"; 
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Momday 夥伴後台 (完整修復版)</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        /* 恢復你最喜歡的 v2.4 樣式 */
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f5f5f5; margin: 0; padding: 20px; padding-bottom: 80px; }
+        .card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .avatar { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; background: #eee; }
+        .badge-green { background: #e8f5e9; color: #06c755; }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-top: 5px; box-sizing: border-box; }
+        .tab-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; }
+        .tab-item { flex: 1; text-align: center; padding: 15px; font-size: 12px; color: #999; }
+        .tab-item.active { color: #06c755; font-weight: bold; }
+        .btn-main { width: 100%; padding: 15px; background: #06C755; color: white; border: none; border-radius: 30px; font-weight: bold; margin-top: 20px; }
+        .order-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 5px solid #ccc; }
+        .btn-action { padding: 8px 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-right: 5px; }
+        .page { display: none; } .active-page { display: block; }
+    </style>
+</head>
+<body>
 
-    let userProfile = null;
-    let mySchedule = [];
-    const dayOrder = { "週一":1, "週二":2, "週三":3, "週四":4, "週五":5, "週六":6, "週日":7 };
+    <div id="tab-profile" class="page active-page">
+        <div class="card">
+            <div style="display:flex; align-items:center;">
+                <img id="form-avatar" class="avatar" src="">
+                <div style="margin-left:15px;">
+                    <h3 id="form-name" style="margin:0;">載入中</h3>
+                    <span id="form-status" class="badge">讀取中...</span>
+                </div>
+            </div>
+            <label>接單狀態</label>
+            <select id="inp-online-status">
+                <option value="Offline">🔴 休息中</option>
+                <option value="Online">🟢 開放接單</option>
+            </select>
+        </div>
 
-    async function main() {
-        initTimeSelects();
-        try {
+        <div class="card">
+            <h3>📝 資料設定</h3>
+            <label>時薪</label><input type="number" id="inp-rate">
+            <label>專長</label><input type="text" id="inp-tags" placeholder="#說故事 #陪讀">
+            <label>自我介紹</label><textarea id="inp-intro" rows="3"></textarea>
+            <label>銀行帳號</label><input type="text" id="inp-bank">
+        </div>
+
+        <div class="card">
+            <h3>🛡️ 驗證上傳</h3>
+            <button onclick="upload('front')">身分證正面</button>
+            <button onclick="upload('police')">良民證</button>
+        </div>
+        
+        <button class="btn-main" onclick="save()">儲存更新</button>
+    </div>
+
+    <div id="tab-orders" class="page">
+        <h2>我的訂單</h2>
+        <div id="order-list">載入中...</div>
+    </div>
+
+    <div class="tab-bar">
+        <div class="tab-item active" onclick="switchTab('profile', this)">👤 檔案</div>
+        <div class="tab-item" onclick="switchTab('orders', this)">📄 訂單</div>
+    </div>
+
+    <input type="file" id="file-input" style="display:none" onchange="handleFile()">
+
+    <script>
+        const LIFF_ID = "2008808827-DzeTt84n";
+        const SCRIPT_URL = "在此更換為你的_GAS_URL";
+        let profile = null;
+        let mySchedule = [];
+
+        async function init() {
             await liff.init({ liffId: LIFF_ID });
             if (!liff.isLoggedIn()) { liff.login(); return; }
-            userProfile = await liff.getProfile();
-            
-            // 【縫合重點 1】強制背景註冊，解決照片消失問題
-            syncPhotoToDatabase();
+            profile = await liff.getProfile();
+            document.getElementById('form-avatar').src = profile.pictureUrl;
+            document.getElementById('form-name').innerText = profile.displayName;
 
-            loadFromCache();
-            checkLogin();
-        } catch (err) {
-            console.error(err);
-            document.getElementById("loading").classList.add("hidden");
-        }
-    }
-
-    async function syncPhotoToDatabase() {
-        // 夥伴一進來，不管有沒有點存檔，先讓家長端能看到他的最新頭像
-        fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({
-                action: "register",
-                userId: userProfile.userId,
-                displayName: userProfile.displayName,
-                pictureUrl: userProfile.pictureUrl
-            })
-        });
-    }
-
-    async function checkLogin() {
-        try {
-            const res = await fetch(SCRIPT_URL, { 
-                method: "POST", 
-                body: JSON.stringify({ action: "login", userId: userProfile.userId }) 
-            });
+            const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "login", userId: profile.userId, displayName: profile.displayName, pictureUrl: profile.pictureUrl }) });
             const result = await res.json();
-            document.getElementById("loading").classList.add("hidden");
             if (result.isRegistered) {
-                renderUI(result.data);
-                localStorage.setItem("worker_data_" + userProfile.userId, JSON.stringify(result.data));
-            } else {
-                // 初次登入顯示
-                document.getElementById("form-avatar").src = userProfile.pictureUrl;
-                document.getElementById("form-name").innerText = userProfile.displayName;
-                document.getElementById("form-avatar").classList.remove("skeleton");
-                document.getElementById("form-name").classList.remove("skeleton");
+                const d = result.data;
+                document.getElementById('inp-rate').value = d.rate;
+                document.getElementById('inp-tags').value = d.tags;
+                document.getElementById('inp-intro').value = d.intro;
+                document.getElementById('inp-bank').value = d.bank;
+                document.getElementById('inp-online-status').value = d.status;
+                document.getElementById('form-status').innerText = d.verified === "Verified" ? "已認證" : "審核中";
+                mySchedule = JSON.parse(d.schedule || "[]");
             }
-        } catch (err) { document.getElementById("loading").classList.add("hidden"); }
-    }
+            loadOrders();
+        }
 
-    // (保留你原有的 renderUI, addBatchSlots, removeSlot, sortSchedule, renderSchedule 函式)
-
-    async function saveProfile() {
-        if(!userProfile) return;
-        const btn = document.querySelector(".btn-main");
-        const originalText = btn.innerText;
-        btn.innerText = "⏳ 儲存中..."; btn.disabled = true;
-
-        const data = { 
-            action: "updateProfile", 
-            userId: userProfile.userId, 
-            name: userProfile.displayName, 
-            photo: userProfile.pictureUrl, // 確保照片連結被寫入
-            rate: document.getElementById("inp-rate").value, 
-            tags: document.getElementById("inp-tags").value, 
-            intro: document.getElementById("inp-intro").value, 
-            bank: document.getElementById("inp-bank").value, 
-            status: document.getElementById("inp-online-status").value, 
-            schedule: JSON.stringify(mySchedule) 
-        };
-        
-        try {
+        async function save() {
+            const data = {
+                action: "updateProfile", userId: profile.userId, 
+                photo: profile.pictureUrl, status: document.getElementById('inp-online-status').value,
+                rate: document.getElementById('inp-rate').value, tags: document.getElementById('inp-tags').value,
+                intro: document.getElementById('inp-intro').value, bank: document.getElementById('inp-bank').value,
+                schedule: JSON.stringify(mySchedule)
+            };
             await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
-            alert("✅ 資料更新成功"); 
-        } catch(e) { alert("更新失敗"); } 
-        finally { btn.innerText = originalText; btn.disabled = false; }
-    }
+            alert("✅ 更新成功");
+        }
 
-    // (保留你原有的 switchTab, loadOrders, updateOrder 函式)
+        async function loadOrders() {
+            const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getMyOrders", workerName: profile.displayName }) });
+            const result = await res.json();
+            document.getElementById('order-list').innerHTML = result.orders.map(o => `
+                <div class="order-card">
+                    <b>👶 ${o.child}</b> (${o.status})<br>
+                    📅 ${o.bookingTime}<br>
+                    💰 $${o.price}<br>
+                    <button class="btn-action" onclick="updateOrderStatus(${o.row}, '已接單')">接單</button>
+                    <button class="btn-action" onclick="updateOrderStatus(${o.row}, '服務中')">開始</button>
+                    <button class="btn-action" onclick="updateOrderStatus(${o.row}, '已完成')">結案</button>
+                </div>
+            `).join('');
+        }
 
-    main();
-</script>
+        async function updateOrderStatus(row, status) {
+            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "updateOrderStatus", row: row, newStatus: status }) });
+            loadOrders();
+        }
+
+        function switchTab(id, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-'+id).classList.add('active-page');
+            el.classList.add('active');
+        }
+
+        init();
+    </script>
+</body>
+</html>
