@@ -8,15 +8,17 @@
     <style>
         body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background-color: #f8f9fa; margin: 0; padding-bottom: 80px; color: #333; }
         .app-header { background: white; padding: 15px 20px; font-size: 20px; font-weight: bold; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        
         .view-container { display: none; padding: 15px; animation: fadeIn 0.3s ease; }
         .view-container.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        /* 列表樣式 */
+        /* 篩選標籤 */
         .filter-scroll { display: flex; overflow-x: auto; gap: 8px; padding: 10px 0; margin-bottom: 10px; scrollbar-width: none; }
         .filter-tag { background: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; color: #666; box-shadow: 0 1px 3px rgba(0,0,0,0.1); white-space: nowrap; cursor: pointer; border: 1px solid transparent; }
         .filter-tag.active { background: #06C755; color: white; border-color: #06c755; }
 
+        /* 陪玩員卡片 */
         .worker-card { background: white; border-radius: 16px; padding: 15px; display: flex; align-items: center; gap: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; }
         .worker-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); background: #eee; }
         .worker-info { flex: 1; overflow: hidden; }
@@ -25,7 +27,7 @@
         .worker-price { font-size: 16px; font-weight: bold; color: #06C755; }
         .btn-book { background-color: #06C755; color: white; border: none; padding: 8px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; white-space: nowrap; }
 
-        /* 模態框 */
+        /* 預約彈窗 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: end; z-index: 2000; backdrop-filter: blur(2px); }
         .modal.show { display: flex; }
         .modal-content { background: white; width: 100%; max-width: 500px; padding: 25px; border-radius: 24px 24px 0 0; animation: slideUp 0.3s; max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
@@ -36,18 +38,20 @@
         .btn-submit { width: 100%; padding: 15px; background: #06c755; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; margin-top: 20px; cursor: pointer; }
         .btn-submit:disabled { background: #ccc; }
 
-        /* 訂單與底部 */
+        /* 底部導航與載入 */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #aaa; font-size: 10px; width: 50%; cursor: pointer; }
         .nav-item.active { color: #06C755; }
         .nav-icon { font-size: 24px; margin-bottom: 2px; }
-        .order-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 5px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .order-card.Paid { border-left-color: #f1c40f; }
-        .order-card.Confirmed { border-left-color: #06C755; }
         
         #full-loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 3000; flex-direction: column; }
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #06C755; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin-bottom: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 訂單卡片 */
+        .order-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 5px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .order-card.Paid { border-left-color: #f1c40f; }
+        .order-card.Confirmed { border-left-color: #06C755; }
     </style>
 </head>
 <body>
@@ -125,7 +129,7 @@
 </div>
 
 <script>
-    // 🔥 請務必替換成您的最新 Exec 網址！
+    // ✅ 已嵌入您提供的正確網址
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
     const LIFF_ID = "2008808827-DzeTt84n"; 
 
@@ -133,7 +137,6 @@
     let allWorkers = [];
     let selectedWorker = null;
 
-    // 1. 初始化
     window.onload = async function() {
         try {
             await liff.init({ liffId: LIFF_ID });
@@ -152,32 +155,34 @@
             }
             document.getElementById("full-loading").style.display = "none";
         } catch (err) {
-            alert("系統初始化失敗：" + err);
+            alert("系統初始化失敗，請檢查網路或 LIFF ID");
+            document.getElementById("full-loading").style.display = "none";
         }
         
         document.getElementById("inp-duration").addEventListener("change", updatePrice);
     };
 
-    // 2. 讀取陪玩員
+    // 讀取陪玩員
     async function loadWorkers() {
         const list = document.getElementById("worker-list");
         list.innerHTML = '<p style="text-align:center;color:#999;">載入中...</p>';
         try {
+            // 使用 Fetch 請求資料，而不是跳轉頁面
             const res = await fetch(SCRIPT_URL + "?action=getWorkers");
             allWorkers = await res.json();
             renderWorkers(allWorkers);
         } catch(e) {
-            list.innerHTML = '<p style="text-align:center;color:red;">載入失敗，請重新整理</p>';
+            console.error(e);
+            list.innerHTML = '<p style="text-align:center;color:red;">載入失敗，請確認後台已部署為 [新版本] (任何人)</p>';
         }
     }
 
     function renderWorkers(workers) {
         const list = document.getElementById("worker-list");
         list.innerHTML = "";
-        if(workers.length === 0) { list.innerHTML = "<p>目前沒有符合的夥伴</p>"; return; }
+        if(workers.length === 0) { list.innerHTML = "<p style='text-align:center;padding:20px;'>目前沒有符合的夥伴</p>"; return; }
         
         workers.forEach(w => {
-            // 防呆：照片壞掉顯示預設圖
             const photo = (w.photo && w.photo.startsWith("http")) ? w.photo : "https://via.placeholder.com/70?text=User";
             const div = document.createElement("div");
             div.className = "worker-card";
@@ -201,23 +206,21 @@
         else renderWorkers(allWorkers.filter(w => (w.tags || "").includes(tag)));
     }
 
-    // 3. 預約邏輯
+    // 預約與付款
     function openBooking(worker) {
         selectedWorker = worker;
         document.getElementById("modal-worker-name").innerText = "預約 " + worker.name;
         document.getElementById("booking-modal").classList.add("show");
         
-        // 解析時段
         const sel = document.getElementById("inp-time");
         sel.innerHTML = "";
         let schedule = [];
         try { schedule = JSON.parse(worker.schedule); } catch(e){}
         
-        if(schedule.length === 0) {
+        if(!schedule || schedule.length === 0) {
             sel.innerHTML = "<option>無可預約時段</option>";
             document.querySelector(".btn-submit").disabled = true;
         } else {
-            // 簡單生成未來日期的選項 (這裡只做簡單示範，實際可用更複雜的日期庫)
             schedule.forEach(slot => {
                sel.innerHTML += `<option value="${slot}">${slot}</option>`;
             });
@@ -248,6 +251,7 @@
         if(!child) { alert("請填寫孩童資訊"); btn.innerText=originalText; btn.disabled=false; return; }
 
         try {
+            // 使用 POST 發送預約請求
             const res = await fetch(SCRIPT_URL, {
                 method: "POST",
                 body: JSON.stringify({
@@ -258,23 +262,23 @@
                     bookingTime: bookingTime,
                     childInfo: child,
                     note: note,
-                    productImageUrl: selectedWorker.photo // 傳送圖片給 LINE Pay
+                    productImageUrl: selectedWorker.photo
                 })
             });
             const result = await res.json();
             if(result.success) {
+                // 只有在這裡才進行跳轉到 LINE Pay
                 window.location.href = result.paymentUrl;
             } else {
                 alert("錯誤：" + result.message);
                 btn.innerText=originalText; btn.disabled=false;
             }
         } catch(e) {
-            alert("網路錯誤：" + e);
+            alert("網路錯誤或後台未部署：" + e);
             btn.innerText=originalText; btn.disabled=false;
         }
     }
 
-    // 4. 訂單與分頁
     function switchTab(tab) {
         document.querySelectorAll(".view-container").forEach(el => el.classList.remove("active"));
         document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
