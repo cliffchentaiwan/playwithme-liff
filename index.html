@@ -1,264 +1,96 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>孩友友 - 尋找陪玩夥伴</title>
-  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  
-  <style>
-    /* === 基礎樣式 === */
-    body { font-family: -apple-system, sans-serif; background-color: #f8f9fa; margin: 0; padding-bottom: 80px; color: #333; }
-    
-    /* 頂部 Header */
-    .app-header { background: white; padding: 15px 20px; font-size: 20px; font-weight: bold; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
-    .refresh-btn { font-size: 14px; color: #06C755; cursor: pointer; display: none; } /* 訂單頁才顯示 */
-
-    /* 頁面切換 */
-    .view-container { display: none; padding: 15px; animation: fadeIn 0.3s ease; }
-    .view-container.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-    /* === 首頁元件 === */
-    .filter-scroll { display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; margin-bottom: 15px; scrollbar-width: none; }
-    .filter-tag { background: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; color: #666; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-    .filter-tag.active { background: #06C755; color: white; font-weight: bold; }
-
-    .worker-card { background: white; border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .worker-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; }
-    .worker-info { flex: 1; }
-    .worker-name { font-size: 18px; font-weight: bold; }
-    .worker-price { font-size: 16px; font-weight: bold; color: #06C755; }
-    .btn-book { background-color: #06C755; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
-
-    /* === 訂單元件 (核心優化) === */
-    .order-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #ddd; position: relative; }
-    
-    /* 狀態顏色定義 */
-    .order-card.Paid { border-left-color: #f1c40f; }       /* 黃色：已付款，待確認 */
-    .order-card.Confirmed { border-left-color: #06C755; }  /* 綠色：已確認，準備服務 */
-    .order-card.Refunded { border-left-color: #e74c3c; }   /* 紅色：已取消退款 */
-    .order-card.Completed { border-left-color: #3498db; }  /* 藍色：已完成 */
-
-    .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
-    .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; background: #eee; }
-    
-    /* 狀態標籤樣式 */
-    .Paid .status-badge { background: #fef9e7; color: #f1c40f; }
-    .Confirmed .status-badge { background: #e8f5e9; color: #06C755; }
-    .Refunded .status-badge { background: #fdedec; color: #e74c3c; }
-
-    .order-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; color: #555; }
-    .label { color: #999; }
-
-    /* 取消按鈕 */
-    .btn-cancel {
-      width: 100%; margin-top: 10px; padding: 10px;
-      background: white; border: 1px solid #e74c3c; color: #e74c3c;
-      border-radius: 8px; font-size: 14px; cursor: pointer;
-    }
-    .btn-cancel:active { background: #fdedec; }
-
-    /* 底部導航 */
-    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
-    .nav-item { display: flex; flex-direction: column; align-items: center; color: #aaa; font-size: 10px; width: 50%; cursor: pointer; }
-    .nav-item.active { color: #06C755; }
-    .nav-icon { font-size: 24px; margin-bottom: 2px; }
-
-    /* Loading */
-    #full-loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 2000; }
-    .loader { border: 3px solid #f3f3f3; border-top: 3px solid #06C755; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Momday 陪玩系統</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #f0f2f5; margin: 0; padding: 15px; }
+        .user-card { background: white; padding: 15px; border-radius: 16px; display: flex; align-items: center; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .user-card img { width: 50px; height: 50px; border-radius: 50%; margin-right: 12px; border: 2px solid #06C755; }
+        .worker-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .worker-avatar { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; margin-right: 15px; }
+        .btn-book { background: #06C755; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; margin-left: auto; }
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 999; }
+    </style>
 </head>
 <body>
+    <div id="loading">讀取系統中...</div>
 
-  <div class="app-header">
-    <span id="page-title">🔍 找陪玩</span>
-    <span class="refresh-btn" onclick="loadOrders()">🔄 更新</span>
-  </div>
-
-  <div id="home-view" class="view-container active">
-    <div class="filter-scroll">
-      <div class="filter-tag active">全部</div>
-      <div class="filter-tag">🏀 籃球</div>
-      <div class="filter-tag">🎨 畫畫</div>
+    <div class="user-card">
+        <img id="my-avatar" src="">
+        <div><div id="my-name" style="font-weight:bold;">載入中...</div><div style="font-size:12px;color:#888;">Momday 歡迎您</div></div>
     </div>
 
-    <div class="worker-card">
-      <img src="https://profile.line-scdn.net/0hdajbSSwiO05HGyQ-P5VFcDdLOCRkamJcYn52LHAZNi4qL3lKa3hyenUYYil8Kn9MbXp8L3odNndlVQxQOQp9LnpPbT0YQ3tONip8YSpBJysDWCdoDhUMc3QTAHYychxtbAYQQQdeERhyYBlPD13SyZoZgQBbjQZLUxXGEIpVc0oGUwbanx9IXMSbH38" class="worker-img">
-      <div class="worker-info">
-        <div class="worker-name">Cliff昇浩</div>
-        <div style="font-size:12px;color:#888;">陪玩經驗豐富，擅長帶動氣氛</div>
-        <div class="worker-price">$500 <small>/hr</small></div>
-      </div>
-      <button class="btn-book" onclick="startBooking('Cliff昇浩', 500)">預約</button>
-    </div>
-  </div>
+    <div style="font-weight:bold; margin-bottom:10px;">預約陪玩夥伴</div>
+    <div id="worker-list"></div>
 
-  <div id="orders-view" class="view-container">
-    <div id="order-list">
-      <div style="text-align:center; padding:50px; color:#999;">載入中...</div>
-    </div>
-  </div>
+    <script>
+        const BACKEND_URL = "在此填入你的_GAS_EXEC_URL";
+        const LIFF_ID = "2008808827-DzeTt84n";
+        let profile = {};
 
-  <div class="bottom-nav">
-    <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
-      <div class="nav-icon">🏠</div><div>首頁</div>
-    </div>
-    <div class="nav-item" id="nav-orders" onclick="switchTab('orders')">
-      <div class="nav-icon">📝</div><div>訂單</div>
-    </div>
-  </div>
+        async function main() {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                profile = await liff.getProfile();
 
-  <div id="full-loading">
-    <div class="loader"></div>
-    <div style="margin-top:10px; color:#666;">處理中...</div>
-  </div>
+                document.getElementById('my-avatar').src = profile.pictureUrl;
+                document.getElementById('my-name').innerText = profile.displayName;
 
-  <script>
-    // ⚠️ 這裡填入您 V7.0 的 GAS 網址
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
-    const LIFF_ID = "2008808827-DzeTt84n";
+                // 核心：同步照片到 Users 表
+                await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: "register",
+                        userId: profile.userId,
+                        displayName: profile.displayName,
+                        pictureUrl: profile.pictureUrl
+                    })
+                });
 
-    let userProfile = null;
-
-    window.onload = function() {
-      if (liff) {
-        liff.init({ liffId: LIFF_ID }).then(() => {
-          if (!liff.isLoggedIn()) {
-            liff.login();
-          } else {
-            liff.getProfile().then(profile => {
-              userProfile = profile;
-              // 檢查是否要直接跳轉訂單頁
-              const urlParams = new URLSearchParams(window.location.search);
-              if (urlParams.get('page') === 'orders') {
-                switchTab('orders');
-              }
-            });
-          }
-        });
-      }
-    };
-
-    function switchTab(tab) {
-      document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-
-      if (tab === 'home') {
-        document.getElementById('home-view').classList.add('active');
-        document.getElementById('nav-home').classList.add('active');
-        document.getElementById('page-title').innerText = "🔍 找陪玩";
-        document.querySelector('.refresh-btn').style.display = 'none';
-      } else {
-        document.getElementById('orders-view').classList.add('active');
-        document.getElementById('nav-orders').classList.add('active');
-        document.getElementById('page-title').innerText = "📋 我的訂單";
-        document.querySelector('.refresh-btn').style.display = 'block';
-        loadOrders();
-      }
-    }
-
-    function startBooking(worker, price) {
-      if(!userProfile) return alert("請稍後...");
-      if(!confirm(`確定預約 ${worker} ($${price})？`)) return;
-      
-      showLoading(true);
-      
-      const payload = {
-        action: "initPayment",
-        userName: userProfile.displayName,
-        companion: worker,
-        price: price,
-        bookingTime: "2026-02-14 14:00", // 範例時間
-        childInfo: "小寶 (6歲)",
-        note: "無"
-      };
-
-      fetch(BACKEND_URL, { method: "POST", body: JSON.stringify(payload) })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-    // 這樣才能讓使用者前往 LINE Pay 付款頁面
-    window.location.href = data.paymentUrl;
-}
-        else { alert("錯誤: " + data.message); showLoading(false); }
-      });
-    }
-
-    function loadOrders() {
-      if(!userProfile) return;
-      const list = document.getElementById('order-list');
-      list.innerHTML = '<div style="text-align:center;padding:50px;color:#aaa;"><div class="loader"></div> 更新中...</div>';
-
-      fetch(BACKEND_URL, {
-        method: "POST",
-        body: JSON.stringify({ action: "getMyOrders", userName: userProfile.displayName })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if(!data.orders || data.orders.length === 0) {
-          list.innerHTML = '<div style="text-align:center;padding:50px;color:#aaa;">📭 尚無訂單</div>';
-          return;
+                loadWorkers();
+            } catch (e) { console.error(e); }
+            finally { document.getElementById('loading').style.display = 'none'; }
         }
-        
-        let html = '';
-        data.orders.forEach(order => {
-          // 狀態翻譯與顏色
-          let statusText = "待確認";
-          let statusClass = "Paid";
-          let canCancel = false;
 
-          if (order.status === "Paid") { 
-            statusText = "待確認 (等待接單)"; 
-            statusClass = "Paid"; 
-            canCancel = true; // 只有這個狀態可以取消
-          }
-          else if (order.status === "Confirmed") { statusText = "✅ 已確認"; statusClass = "Confirmed"; }
-          else if (order.status === "Refunded") { statusText = "已取消退款"; statusClass = "Refunded"; }
-          
-          html += `
-            <div class="order-card ${statusClass}">
-              <div class="order-header">
-                <span style="font-weight:bold">${order.worker}</span>
-                <div class="status-badge">${statusText}</div>
-              </div>
-              <div class="order-row"><span class="label">時間</span> ${order.bookingTime}</div>
-              <div class="order-row"><span class="label">備註</span> ${order.note}</div>
-              <div class="order-row"><span class="label">金額</span> $${order.price}</div>
-              
-              ${canCancel ? `<button class="btn-cancel" onclick="cancelOrder('${order.transactionId}')">取消預約並退款</button>` : ''}
-            </div>
-          `;
-        });
-        list.innerHTML = html;
-      });
-    }
+        async function loadWorkers() {
+            const res = await fetch(BACKEND_URL, { method: 'POST', body: JSON.stringify({ action: "get_workers" }) });
+            const result = await res.json();
+            const container = document.getElementById('worker-list');
+            container.innerHTML = result.data.map(w => `
+                <div class="worker-card">
+                    <img class="worker-avatar" src="${w.pictureUrl || 'https://via.placeholder.com/60'}">
+                    <div><div style="font-weight:bold;">${w.displayName}</div><div style="font-size:12px;color:#06C755;">認證夥伴</div></div>
+                    <button class="btn-book" onclick="book('${w.displayName}')">預約</button>
+                </div>
+            `).join('');
+        }
 
-    function cancelOrder(tId) {
-      if(!confirm("確定要取消這筆訂單並退款嗎？")) return;
-      showLoading(true);
-
-      fetch(BACKEND_URL, {
-        method: "POST",
-        body: JSON.stringify({ 
-          action: "cancelOrder", 
-          transactionId: tId,
-          userName: userProfile.displayName 
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        showLoading(false);
-        alert(data.message);
-        loadOrders(); // 重新整理列表
-      });
-    }
-
-    function showLoading(show) {
-      document.getElementById('full-loading').style.display = show ? 'flex' : 'none';
-    }
-  </script>
+        async function book(name) {
+            document.getElementById('loading').style.display = 'flex';
+            const res = await fetch(BACKEND_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: "initPayment",
+                    userName: profile.displayName,
+                    companion: name,
+                    price: "100",
+                    bookingTime: new Date().toLocaleString(),
+                    childInfo: "系統測試", note: "無"
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.location.href = data.paymentUrl;
+            } else {
+                alert("預約失敗");
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        window.onload = main;
+    </script>
 </body>
 </html>
