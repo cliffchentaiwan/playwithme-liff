@@ -3,175 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>陪玩夥伴後台 (V7.0)</title>
+    <title>孩友友 (夥伴端)</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; padding-bottom: 80px; color: #333; }
-        .card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .avatar { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 10px; display: block; object-fit: cover; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h2 { text-align: center; margin: 0 0 5px 0; font-size: 20px; }
-        .status-badge { text-align: center; margin-bottom: 20px; font-size: 13px; color: #666; background: #eee; display: inline-block; padding: 4px 12px; border-radius: 12px; }
+        body { font-family: sans-serif; background: #f5f5f5; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center; }
+        .avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: #eee; margin-bottom: 10px; }
+        input, select, textarea { width: 100%; padding: 10px; margin: 5px 0 15px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        label { display: block; text-align: left; font-weight: bold; font-size: 14px; margin-top: 10px; }
+        .btn-save { width: 100%; padding: 15px; background: #06c755; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; }
         
-        label { display: block; font-weight: bold; margin: 15px 0 5px; font-size: 14px; color: #555; }
-        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; background: #fafafa; font-size: 15px; }
-        
-        .time-slot { background: #e3f2fd; color: #1565c0; padding: 10px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
-        .btn-del { color: #d32f2f; font-weight: bold; cursor: pointer; padding: 5px; }
-        
-        .btn-main { width: 100%; padding: 14px; background-color: #06c755; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; margin-top: 20px; cursor: pointer; }
-        .btn-main:disabled { background: #ccc; }
-        
-        /* 訂單卡片 */
-        .order-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-left: 5px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .order-card.Pending { border-left-color: #ff9800; }
-        .order-card.Paid { border-left-color: #f1c40f; }
-        .order-card.Accepted { border-left-color: #2196f3; }
-        
-        .btn-action { padding: 8px 12px; border-radius: 6px; border: none; font-size: 13px; cursor: pointer; margin-right: 5px; color: white; }
-        .btn-accept { background: #2196f3; }
-        .btn-reject { background: #f44336; }
-
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: flex; justify-content: center; align-items: center; }
+        .time-item { background: #e3f2fd; padding: 8px; margin: 5px 0; border-radius: 5px; display: flex; justify-content: space-between; }
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; justify-content:center; align-items:center; z-index:2000; }
     </style>
 </head>
 <body>
 
-<div id="loading">🚀 系統載入中...</div>
-
-<div class="card" style="text-align:center;">
-    <img id="form-avatar" class="avatar" src="https://via.placeholder.com/80">
-    <h2 id="form-name">載入中...</h2>
-    <span id="form-status" class="status-badge">檢查中...</span>
-</div>
+<div id="loading">讀取資料中...</div>
 
 <div class="card">
-    <h3>📝 基本資料</h3>
-    <label>時薪 (TWD)</label>
-    <input type="number" id="inp-rate" placeholder="例如: 300">
+    <img id="my-avatar" class="avatar" src="">
+    <h2 id="my-name">...</h2>
+    <div id="status-badge" style="background:#eee; padding:5px; display:inline-block; border-radius:5px; font-size:12px;">讀取中</div>
+</div>
+
+<div class="card" style="text-align:left;">
+    <label>時薪</label>
+    <input type="number" id="inp-rate">
     
-    <label>標籤 (用逗號分隔)</label>
-    <input type="text" id="inp-tags" placeholder="畫畫, 鋼琴, 運動">
+    <label>標籤 (逗號分隔)</label>
+    <input type="text" id="inp-tags">
     
     <label>自我介紹</label>
-    <textarea id="inp-intro" rows="3"></textarea>
+    <textarea id="inp-intro"></textarea>
     
-    <label>銀行帳號 (匯款用)</label>
-    <input type="text" id="inp-bank">
-</div>
-
-<div class="card">
-    <h3>📅 排班設定</h3>
-    <div style="display:flex; gap:5px; margin-bottom:10px;">
-        <select id="sel-day" style="flex:1">
-            <option value="週一">週一</option><option value="週二">週二</option><option value="週三">週三</option>
-            <option value="週四">週四</option><option value="週五">週五</option><option value="週六">週六</option><option value="週日">週日</option>
-        </select>
-        <select id="sel-time" style="flex:1">
-            </select>
-        <button onclick="addSlot()" style="background:#1976d2; color:white; border:none; border-radius:8px; width:50px;">+</button>
+    <label>排班設定</label>
+    <div style="display:flex; gap:5px;">
+        <select id="sel-day"><option>週一</option><option>週二</option><option>週三</option><option>週四</option><option>週五</option><option>週六</option><option>週日</option></select>
+        <select id="sel-time"><option>09:00</option><option>10:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>19:00</option></select>
+        <button onclick="addTime()" style="width:50px;">+</button>
     </div>
-    <div id="schedule-list"></div>
+    <div id="schedule-box" style="margin-top:10px;"></div>
 </div>
 
-<div class="card">
-    <h3>📋 接單管理</h3>
-    <div id="order-list">
-        <p style="color:#999; text-align:center;">載入訂單中...</p>
-    </div>
-</div>
-
-<button class="btn-main" onclick="saveProfile()">儲存並更新資料</button>
+<button class="btn-save" onclick="saveData()">儲存資料</button>
 
 <script>
-    // ✅ 已嵌入您提供的正確網址
+    const LIFF_ID = "2008808827-DzeTt84n";
+    // 直接放入您確認過正確的網址
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
-    const LIFF_ID = "2008808827-DzeTt84n"; 
 
     let userProfile = null;
     let mySchedule = [];
 
-    // 初始化時段選項
-    const timeSel = document.getElementById("sel-time");
-    for(let i=8; i<=22; i++) {
-        let h = i < 10 ? "0"+i : i;
-        timeSel.innerHTML += `<option value="${h}:00">${h}:00</option>`;
-    }
-
     window.onload = async function() {
-        try {
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) { liff.login(); return; }
-            userProfile = await liff.getProfile();
-            
-            checkLogin();
-        } catch(e) {
-            alert("初始化失敗，請檢查 LIFF ID: " + e);
-            document.getElementById("loading").style.display = "none";
-        }
+        await liff.init({ liffId: LIFF_ID });
+        if(!liff.isLoggedIn()) { liff.login(); return; }
+        userProfile = await liff.getProfile();
+        
+        // 顯示基本資料
+        document.getElementById("my-avatar").src = userProfile.pictureUrl;
+        document.getElementById("my-name").innerText = userProfile.displayName;
+        
+        fetchData();
     };
 
-    async function checkLogin() {
+    async function fetchData() {
         try {
-            const res = await fetch(SCRIPT_URL, {
+            let res = await fetch(SCRIPT_URL, {
                 method: "POST",
                 body: JSON.stringify({ action: "login", userId: userProfile.userId })
             });
-            const result = await res.json();
+            let json = await res.json();
             document.getElementById("loading").style.display = "none";
             
-            // 優先顯示 LINE 照片
-            document.getElementById("form-avatar").src = userProfile.pictureUrl || "https://via.placeholder.com/80";
-            document.getElementById("form-name").innerText = userProfile.displayName;
-
-            if(result.isRegistered) {
-                const d = result.data;
+            if(json.isRegistered) {
+                let d = json.data;
                 document.getElementById("inp-rate").value = d.rate;
                 document.getElementById("inp-tags").value = d.tags;
                 document.getElementById("inp-intro").value = d.intro;
-                document.getElementById("inp-bank").value = d.bank;
-                document.getElementById("form-status").innerText = d.verified === "Verified" ? "✅ 已認證上架" : "⏳ 資料審核中";
+                document.getElementById("status-badge").innerText = d.verified === "Verified" ? "✅ 已認證" : "審核中";
                 
                 try { mySchedule = JSON.parse(d.schedule); } catch(e){ mySchedule = []; }
                 renderSchedule();
-                
-                loadMyOrders(d.name); // 載入訂單
             } else {
-                document.getElementById("form-status").innerText = "👋 歡迎新夥伴，請填寫資料";
-                document.getElementById("form-status").style.background = "#fff3e0";
+                document.getElementById("status-badge").innerText = "新用戶";
             }
         } catch(e) {
-            alert("連線錯誤 (請確認後台已建立新版本): " + e);
+            alert("連線錯誤: " + e);
             document.getElementById("loading").style.display = "none";
         }
     }
 
-    // 排班邏輯
-    function addSlot() {
-        const slot = `${document.getElementById("sel-day").value} ${document.getElementById("sel-time").value}`;
-        if(!mySchedule.includes(slot)) {
-            mySchedule.push(slot);
-            mySchedule.sort();
+    function addTime() {
+        let t = document.getElementById("sel-day").value + " " + document.getElementById("sel-time").value;
+        if(!mySchedule.includes(t)) {
+            mySchedule.push(t);
             renderSchedule();
         }
     }
-    function removeSlot(idx) {
-        mySchedule.splice(idx, 1);
-        renderSchedule();
-    }
+
     function renderSchedule() {
-        const div = document.getElementById("schedule-list");
-        div.innerHTML = "";
+        let box = document.getElementById("schedule-box");
+        box.innerHTML = "";
         mySchedule.forEach((s, i) => {
-            div.innerHTML += `<div class="time-slot"><span>${s}</span><span class="btn-del" onclick="removeSlot(${i})">&times;</span></div>`;
+            box.innerHTML += `<div class="time-item">${s} <span onclick="mySchedule.splice(${i},1);renderSchedule()" style="color:red;cursor:pointer;">x</span></div>`;
         });
     }
 
-    // 儲存資料
-    async function saveProfile() {
-        const btn = document.querySelector(".btn-main");
+    async function saveData() {
+        let btn = document.querySelector(".btn-save");
         btn.innerText = "儲存中..."; btn.disabled = true;
-
-        const data = {
+        
+        let data = {
             action: "updateProfile",
             userId: userProfile.userId,
             name: userProfile.displayName,
@@ -179,73 +123,17 @@
             rate: document.getElementById("inp-rate").value,
             tags: document.getElementById("inp-tags").value,
             intro: document.getElementById("inp-intro").value,
-            bank: document.getElementById("inp-bank").value,
-            status: "Online", // 預設上架
+            status: "Online",
             schedule: JSON.stringify(mySchedule)
         };
 
         try {
             await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
-            alert("✅ 資料更新成功！");
+            alert("儲存成功！");
         } catch(e) {
-            alert("更新失敗：" + e);
-        } finally {
-            btn.innerText = "儲存並更新資料"; btn.disabled = false;
+            alert("失敗: " + e);
         }
-    }
-
-    // 訂單管理
-    async function loadMyOrders(myName) {
-        const list = document.getElementById("order-list");
-        const res = await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "getMyOrders", workerName: myName, role: "worker" })
-        });
-        const data = await res.json();
-        
-        if(!data.orders || data.orders.length === 0) {
-            list.innerHTML = "<p style='text-align:center;color:#999;'>目前沒有新訂單</p>";
-            return;
-        }
-
-        let html = "";
-        data.orders.forEach(o => {
-            let btns = "";
-            let statusClass = "Pending";
-            
-            if(o.status === "Paid") {
-                statusClass = "Paid";
-                btns = `
-                    <button class="btn-action btn-accept" onclick="updateOrder(${o.row}, '已接單')">接單</button>
-                    <button class="btn-action btn-reject" onclick="updateOrder(${o.row}, '已拒絕')">拒絕</button>
-                `;
-            } else if(o.status === "已接單") {
-                statusClass = "Accepted";
-                btns = `<span style="color:#2196f3; font-weight:bold;">已接單，準備服務</span>`;
-            } else if(o.status === "已拒絕") {
-                btns = `<span style="color:red;">已拒絕此單</span>`;
-            }
-
-            html += `
-                <div class="order-card ${statusClass}">
-                    <div style="font-weight:bold; margin-bottom:5px;">家長：${o.parent}</div>
-                    <div style="font-size:14px;">時間：${o.bookingTime}</div>
-                    <div style="font-size:14px;">備註：${o.note}</div>
-                    <div style="margin-top:10px;">${btns}</div>
-                </div>
-            `;
-        });
-        list.innerHTML = html;
-    }
-
-    async function updateOrder(row, status) {
-        if(!confirm(`確定要${status}嗎？`)) return;
-        await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "updateOrderStatus", row: row, newStatus: status })
-        });
-        alert("更新成功");
-        location.reload();
+        btn.innerText = "儲存資料"; btn.disabled = false;
     }
 </script>
 </body>
