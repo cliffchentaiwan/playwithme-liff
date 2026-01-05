@@ -179,7 +179,10 @@
       fetch(BACKEND_URL, { method: "POST", body: JSON.stringify(payload) })
       .then(res => res.json())
       .then(data => {
-        if(data.success) window.location.href = data.paymentUrl;
+        if(data.success) {
+    alert("預約資料已送出！支付網址為：" + data.paymentUrl);
+    showLoading(false);
+}
         else { alert("錯誤: " + data.message); showLoading(false); }
       });
     }
