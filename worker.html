@@ -3,80 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>孩友友 (診斷模式)</title>
+    <title>陪玩夥伴後台</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #333; color: white; }
-        .log-box { background: #000; border: 1px solid #0f0; color: #0f0; padding: 15px; font-family: monospace; font-size: 14px; min-height: 300px; overflow-y: auto; white-space: pre-wrap; }
-        h3 { color: #fff; border-bottom: 1px solid #555; padding-bottom: 10px; }
+        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; padding-bottom: 80px; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .avatar { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 10px; display: block; object-fit: cover; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { text-align: center; margin: 0 0 5px 0; font-size: 20px; }
+        .status-badge { text-align: center; margin-bottom: 20px; display: block; }
+        .badge { background: #e8f5e9; color: #06c755; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: bold; }
+        
+        label { display: block; font-weight: bold; margin: 15px 0 5px; font-size: 14px; color: #555; }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; background: #fafafa; font-size: 15px; }
+        
+        .time-slot { background: #e3f2fd; color: #1565c0; padding: 10px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
+        .btn-del { color: #d32f2f; font-weight: bold; cursor: pointer; padding: 5px; }
+        
+        .btn-main { width: 100%; padding: 14px; background-color: #06c755; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: flex; justify-content: center; align-items: center; flex-direction: column; }
     </style>
 </head>
 <body>
 
-<h3>🔧 系統診斷模式 (V7.1)</h3>
-<p>如果卡住，請截圖這個黑色框框傳給我：</p>
-<div id="debug-log" class="log-box">準備開始...</div>
+<div id="loading">
+    <div style="font-size:40px;">🚀</div>
+    <div style="margin-top:10px;">資料讀取中...</div>
+    <div style="margin-top:5px; font-size:12px; color:#999;">(請在 LINE 內開啟)</div>
+</div>
+
+<div class="card">
+    <img id="form-avatar" class="avatar" src="https://via.placeholder.com/80">
+    <h2 id="form-name">載入中...</h2>
+    <div class="status-badge"><span id="form-status" class="badge">檢查中...</span></div>
+</div>
+
+<div class="card">
+    <h3>📝 基本資料</h3>
+    <label>時薪 (TWD)</label>
+    <input type="number" id="inp-rate" placeholder="例如: 300">
+    <label>標籤 (逗號分隔)</label>
+    <input type="text" id="inp-tags" placeholder="畫畫, 鋼琴, 運動">
+    <label>自我介紹</label>
+    <textarea id="inp-intro" rows="3"></textarea>
+    <label>銀行帳號</label>
+    <input type="text" id="inp-bank">
+</div>
+
+<div class="card">
+    <h3>📅 排班設定</h3>
+    <div style="display:flex; gap:5px; margin-bottom:10px;">
+        <select id="sel-day" style="flex:1">
+            <option value="週一">週一</option><option value="週二">週二</option><option value="週三">週三</option><option value="週四">週四</option><option value="週五">週五</option><option value="週六">週六</option><option value="週日">週日</option>
+        </select>
+        <select id="sel-time" style="flex:1">
+            <option value="09:00">09:00</option><option value="10:00">10:00</option><option value="13:00">13:00</option><option value="14:00">14:00</option><option value="15:00">15:00</option><option>19:00</option>
+        </select>
+        <button onclick="addSlot()" style="background:#1976d2; color:white; border:none; border-radius:8px; width:50px;">+</button>
+    </div>
+    <div id="schedule-list"></div>
+</div>
+
+<button class="btn-main" onclick="saveProfile()">儲存更新</button>
 
 <script>
-    // 1. 設定區
-    const LIFF_ID = "2008808827-DzeTt84n"; 
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
+    const LIFF_ID = "2008808827-DzeTt84n"; 
 
-    // 2. 螢幕輸出函式
-    function log(msg) {
-        const box = document.getElementById("debug-log");
-        const time = new Date().toLocaleTimeString();
-        box.innerHTML += `[${time}] ${msg}\n`;
-        console.log(msg);
-    }
+    let userProfile = null;
+    let mySchedule = [];
 
-    window.onerror = function(msg, url, line) {
-        log(`❌ 發生錯誤:\n${msg}\n(Line: ${line})`);
+    window.onload = async function() {
+        try {
+            await liff.init({ liffId: LIFF_ID });
+            // 如果是在 LINE 內開啟，這裡會直接過。
+            // 如果是在外部瀏覽器，這裡會觸發登入跳轉。
+            if (!liff.isLoggedIn()) { 
+                liff.login(); 
+                return; 
+            }
+            userProfile = await liff.getProfile();
+            
+            checkLogin();
+        } catch(e) {
+            alert("初始化失敗: " + e);
+            document.getElementById("loading").style.display = "none";
+        }
     };
 
-    // 3. 主程式
-    window.onload = async function() {
-        log("🚀 頁面載入完成 (v7.1)");
-        
-        // 檢查 LIFF SDK
-        if(typeof liff === 'undefined') {
-            log("❌ 錯誤: LIFF SDK 未載入！請檢查網路連線");
-            return;
-        }
-
+    async function checkLogin() {
         try {
-            log("⏳ 步驟 1: 正在初始化 LIFF...");
-            log("LIFF ID: " + LIFF_ID);
-            
-            await liff.init({ liffId: LIFF_ID });
-            log("✅ LIFF 初始化成功！");
-
-            if (!liff.isLoggedIn()) {
-                log("⚠️ 未登入，正在跳轉 LINE 登入頁面...");
-                liff.login();
-                return;
-            }
-
-            const profile = await liff.getProfile();
-            log(`👤 使用者: ${profile.displayName}`);
-            log(`🆔 UserID: ${profile.userId}`);
-            
-            log("📡 步驟 2: 連線到 Google 後端...");
             const res = await fetch(SCRIPT_URL, {
                 method: "POST",
-                body: JSON.stringify({ action: "login", userId: profile.userId })
+                body: JSON.stringify({ action: "login", userId: userProfile.userId })
             });
+            const result = await res.json();
+            document.getElementById("loading").style.display = "none";
+            
+            // 顯示大頭貼
+            document.getElementById("form-avatar").src = userProfile.pictureUrl || "https://via.placeholder.com/80";
+            document.getElementById("form-name").innerText = userProfile.displayName;
 
-            log("📩 收到回應，正在讀取...");
-            const json = await res.json();
-            log("✅ 資料讀取成功！內容如下:");
-            log(JSON.stringify(json, null, 2));
-
-        } catch (e) {
-            log("❌ 執行失敗: " + e.toString());
-            log("👉 請截圖此畫面，這是關鍵線索！");
+            if(result.isRegistered) {
+                const d = result.data;
+                document.getElementById("inp-rate").value = d.rate;
+                document.getElementById("inp-tags").value = d.tags;
+                document.getElementById("inp-intro").value = d.intro;
+                document.getElementById("inp-bank").value = d.bank;
+                document.getElementById("form-status").innerText = d.verified === "Verified" ? "✅ 已認證上架" : "⏳ 資料審核中";
+                
+                try { mySchedule = JSON.parse(d.schedule); } catch(e){ mySchedule = []; }
+                renderSchedule();
+            } else {
+                document.getElementById("form-status").innerText = "👋 歡迎新夥伴";
+            }
+        } catch(e) {
+            alert("連線錯誤: " + e);
+            document.getElementById("loading").style.display = "none";
         }
-    };
+    }
+
+    function addSlot() {
+        const slot = `${document.getElementById("sel-day").value} ${document.getElementById("sel-time").value}`;
+        if(!mySchedule.includes(slot)) {
+            mySchedule.push(slot);
+            mySchedule.sort();
+            renderSchedule();
+        }
+    }
+    function removeSlot(idx) {
+        mySchedule.splice(idx, 1);
+        renderSchedule();
+    }
+    function renderSchedule() {
+        const div = document.getElementById("schedule-list");
+        div.innerHTML = "";
+        mySchedule.forEach((s, i) => {
+            div.innerHTML += `<div class="time-slot"><span>${s}</span><span class="btn-del" onclick="removeSlot(${i})">&times;</span></div>`;
+        });
+    }
+
+    async function saveProfile() {
+        const btn = document.querySelector(".btn-main");
+        btn.innerText = "儲存中..."; btn.disabled = true;
+
+        const data = {
+            action: "updateProfile",
+            userId: userProfile.userId,
+            name: userProfile.displayName,
+            photo: userProfile.pictureUrl,
+            rate: document.getElementById("inp-rate").value,
+            tags: document.getElementById("inp-tags").value,
+            intro: document.getElementById("inp-intro").value,
+            bank: document.getElementById("inp-bank").value,
+            status: "Online",
+            schedule: JSON.stringify(mySchedule)
+        };
+
+        try {
+            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
+            alert("✅ 資料更新成功！");
+        } catch(e) {
+            alert("更新失敗：" + e);
+        } finally {
+            btn.innerText = "儲存更新"; btn.disabled = false;
+        }
+    }
 </script>
 </body>
 </html>
