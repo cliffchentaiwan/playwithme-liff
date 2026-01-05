@@ -12,15 +12,11 @@
         h2 { text-align: center; margin: 0 0 5px 0; font-size: 20px; }
         .status-badge { text-align: center; margin-bottom: 20px; display: block; }
         .badge { background: #e8f5e9; color: #06c755; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: bold; }
-        
         label { display: block; font-weight: bold; margin: 15px 0 5px; font-size: 14px; color: #555; }
         input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; background: #fafafa; font-size: 15px; }
-        
         .time-slot { background: #e3f2fd; color: #1565c0; padding: 10px; border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; font-size: 14px; align-items: center; }
         .btn-del { color: #d32f2f; font-weight: bold; cursor: pointer; padding: 5px; }
-        
         .btn-main { width: 100%; padding: 14px; background-color: #06c755; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; margin-top: 20px; cursor: pointer; }
-        
         #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: flex; justify-content: center; align-items: center; flex-direction: column; }
     </style>
 </head>
@@ -29,7 +25,6 @@
 <div id="loading">
     <div style="font-size:40px;">🚀</div>
     <div style="margin-top:10px;">資料讀取中...</div>
-    <div style="margin-top:5px; font-size:12px; color:#999;">(請在 LINE 內開啟)</div>
 </div>
 
 <div class="card">
@@ -53,12 +48,8 @@
 <div class="card">
     <h3>📅 排班設定</h3>
     <div style="display:flex; gap:5px; margin-bottom:10px;">
-        <select id="sel-day" style="flex:1">
-            <option value="週一">週一</option><option value="週二">週二</option><option value="週三">週三</option><option value="週四">週四</option><option value="週五">週五</option><option value="週六">週六</option><option value="週日">週日</option>
-        </select>
-        <select id="sel-time" style="flex:1">
-            <option value="09:00">09:00</option><option value="10:00">10:00</option><option value="13:00">13:00</option><option value="14:00">14:00</option><option value="15:00">15:00</option><option>19:00</option>
-        </select>
+        <select id="sel-day" style="flex:1"><option value="週一">週一</option><option value="週二">週二</option><option value="週三">週三</option><option value="週四">週四</option><option value="週五">週五</option><option value="週六">週六</option><option value="週日">週日</option></select>
+        <select id="sel-time" style="flex:1"><option value="09:00">09:00</option><option value="10:00">10:00</option><option value="13:00">13:00</option><option value="14:00">14:00</option><option value="15:00">15:00</option><option>19:00</option></select>
         <button onclick="addSlot()" style="background:#1976d2; color:white; border:none; border-radius:8px; width:50px;">+</button>
     </div>
     <div id="schedule-list"></div>
@@ -76,14 +67,12 @@
     window.onload = async function() {
         try {
             await liff.init({ liffId: LIFF_ID });
-            // 如果是在 LINE 內開啟，這裡會直接過。
-            // 如果是在外部瀏覽器，這裡會觸發登入跳轉。
+            // 自動登入判斷
             if (!liff.isLoggedIn()) { 
                 liff.login(); 
                 return; 
             }
             userProfile = await liff.getProfile();
-            
             checkLogin();
         } catch(e) {
             alert("初始化失敗: " + e);
@@ -93,14 +82,17 @@
 
     async function checkLogin() {
         try {
+            // [關鍵修正] 加入 headers: text/plain 避免 iOS 阻擋
             const res = await fetch(SCRIPT_URL, {
                 method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({ action: "login", userId: userProfile.userId })
             });
+            
             const result = await res.json();
             document.getElementById("loading").style.display = "none";
             
-            // 顯示大頭貼
+            // 顯示畫面資料
             document.getElementById("form-avatar").src = userProfile.pictureUrl || "https://via.placeholder.com/80";
             document.getElementById("form-name").innerText = userProfile.displayName;
 
@@ -111,30 +103,22 @@
                 document.getElementById("inp-intro").value = d.intro;
                 document.getElementById("inp-bank").value = d.bank;
                 document.getElementById("form-status").innerText = d.verified === "Verified" ? "✅ 已認證上架" : "⏳ 資料審核中";
-                
                 try { mySchedule = JSON.parse(d.schedule); } catch(e){ mySchedule = []; }
                 renderSchedule();
             } else {
                 document.getElementById("form-status").innerText = "👋 歡迎新夥伴";
             }
         } catch(e) {
-            alert("連線錯誤: " + e);
+            alert("連線錯誤 (請重新整理): " + e);
             document.getElementById("loading").style.display = "none";
         }
     }
 
     function addSlot() {
         const slot = `${document.getElementById("sel-day").value} ${document.getElementById("sel-time").value}`;
-        if(!mySchedule.includes(slot)) {
-            mySchedule.push(slot);
-            mySchedule.sort();
-            renderSchedule();
-        }
+        if(!mySchedule.includes(slot)) { mySchedule.push(slot); mySchedule.sort(); renderSchedule(); }
     }
-    function removeSlot(idx) {
-        mySchedule.splice(idx, 1);
-        renderSchedule();
-    }
+    function removeSlot(idx) { mySchedule.splice(idx, 1); renderSchedule(); }
     function renderSchedule() {
         const div = document.getElementById("schedule-list");
         div.innerHTML = "";
@@ -161,7 +145,12 @@
         };
 
         try {
-            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
+            // [關鍵修正] 這裡也要加 headers
+            await fetch(SCRIPT_URL, { 
+                method: "POST", 
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(data) 
+            });
             alert("✅ 資料更新成功！");
         } catch(e) {
             alert("更新失敗：" + e);
