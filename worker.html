@@ -6,57 +6,50 @@
     <title>孩友友 (診斷模式)</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
-        .log-box { background: #000; color: #0f0; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 14px; min-height: 200px; margin-bottom: 20px; overflow-y: auto; }
-        .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; }
-        .btn { background: #06c755; color: white; padding: 10px; width: 100%; border: none; border-radius: 5px; font-size: 16px; }
+        body { font-family: sans-serif; padding: 20px; background: #333; color: white; }
+        .log-box { background: #000; border: 1px solid #0f0; color: #0f0; padding: 15px; font-family: monospace; font-size: 14px; min-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+        h3 { color: #fff; border-bottom: 1px solid #555; padding-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<h3>🔧 系統診斷模式</h3>
-<p>請截圖這個黑框框裡的文字給我：</p>
-<div id="debug-log" class="log-box">等待執行...</div>
-
-<div class="card" id="main-content" style="display:none;">
-    <h2 id="my-name">載入中...</h2>
-    <p id="status-text">狀態檢查中...</p>
-    <button class="btn" onclick="location.reload()">重新整理</button>
-</div>
+<h3>🔧 系統診斷模式 (V7.1)</h3>
+<p>如果卡住，請截圖這個黑色框框傳給我：</p>
+<div id="debug-log" class="log-box">準備開始...</div>
 
 <script>
     // 1. 設定區
     const LIFF_ID = "2008808827-DzeTt84n"; 
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
 
-    // 2. 記錄器函式
+    // 2. 螢幕輸出函式
     function log(msg) {
         const box = document.getElementById("debug-log");
         const time = new Date().toLocaleTimeString();
-        box.innerHTML += `[${time}] ${msg}<br>`;
+        box.innerHTML += `[${time}] ${msg}\n`;
         console.log(msg);
     }
 
-    // 3. 全局錯誤攔截
-    window.onerror = function(message, source, lineno, colno, error) {
-        log(`❌ 發生錯誤: ${message} (Line: ${lineno})`);
-        return false;
+    window.onerror = function(msg, url, line) {
+        log(`❌ 發生錯誤:\n${msg}\n(Line: ${line})`);
     };
 
-    // 4. 主程式
+    // 3. 主程式
     window.onload = async function() {
-        log("🚀 頁面載入完成，開始執行...");
+        log("🚀 頁面載入完成 (v7.1)");
         
         // 檢查 LIFF SDK
         if(typeof liff === 'undefined') {
-            log("❌ 嚴重錯誤: LIFF SDK 未載入，請檢查網路");
+            log("❌ 錯誤: LIFF SDK 未載入！請檢查網路連線");
             return;
         }
 
         try {
-            log("⏳ 正在初始化 LIFF...");
+            log("⏳ 步驟 1: 正在初始化 LIFF...");
+            log("LIFF ID: " + LIFF_ID);
+            
             await liff.init({ liffId: LIFF_ID });
-            log("✅ LIFF 初始化成功");
+            log("✅ LIFF 初始化成功！");
 
             if (!liff.isLoggedIn()) {
                 log("⚠️ 未登入，正在跳轉 LINE 登入頁面...");
@@ -65,37 +58,23 @@
             }
 
             const profile = await liff.getProfile();
-            log(`👤 已取得使用者: ${profile.displayName}`);
+            log(`👤 使用者: ${profile.displayName}`);
+            log(`🆔 UserID: ${profile.userId}`);
             
-            // 顯示主畫面
-            document.getElementById("main-content").style.display = "block";
-            document.getElementById("my-name").innerText = profile.displayName;
-
-            // 開始連線 GAS
-            log("📡 正在連線到 Google 後端...");
-            log("目標網址: " + SCRIPT_URL);
-
+            log("📡 步驟 2: 連線到 Google 後端...");
             const res = await fetch(SCRIPT_URL, {
                 method: "POST",
                 body: JSON.stringify({ action: "login", userId: profile.userId })
             });
 
-            log("📩 收到回應，正在解析...");
+            log("📩 收到回應，正在讀取...");
             const json = await res.json();
-            log("✅ 資料解析成功！內容如下:");
-            log(JSON.stringify(json).substring(0, 100) + "...");
-
-            if(json.isRegistered) {
-                document.getElementById("status-text").innerText = "狀態: " + (json.data.verified || "未知");
-                log("🎉 流程全部成功！系統正常。");
-            } else {
-                document.getElementById("status-text").innerText = "狀態: 新用戶 (未註冊)";
-                log("ℹ️ 使用者尚未註冊");
-            }
+            log("✅ 資料讀取成功！內容如下:");
+            log(JSON.stringify(json, null, 2));
 
         } catch (e) {
-            log("❌ 執行過程中斷: " + e.toString());
-            log("💡 請確認 GitHub Actions 是否有綠色勾勾");
+            log("❌ 執行失敗: " + e.toString());
+            log("👉 請截圖此畫面，這是關鍵線索！");
         }
     };
 </script>
