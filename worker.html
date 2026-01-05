@@ -83,7 +83,7 @@
 <button class="btn-main" onclick="saveProfile()">儲存並更新資料</button>
 
 <script>
-    // 🔥 請務必替換成您的最新 Exec 網址！
+    // ✅ 已嵌入您提供的正確網址
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
     const LIFF_ID = "2008808827-DzeTt84n"; 
 
@@ -105,7 +105,8 @@
             
             checkLogin();
         } catch(e) {
-            alert("初始化失敗: " + e);
+            alert("初始化失敗，請檢查 LIFF ID: " + e);
+            document.getElementById("loading").style.display = "none";
         }
     };
 
@@ -118,7 +119,7 @@
             const result = await res.json();
             document.getElementById("loading").style.display = "none";
             
-            // 優先顯示 LINE 照片，若資料庫有不同邏輯可在此修改
+            // 優先顯示 LINE 照片
             document.getElementById("form-avatar").src = userProfile.pictureUrl || "https://via.placeholder.com/80";
             document.getElementById("form-name").innerText = userProfile.displayName;
 
@@ -136,9 +137,11 @@
                 loadMyOrders(d.name); // 載入訂單
             } else {
                 document.getElementById("form-status").innerText = "👋 歡迎新夥伴，請填寫資料";
+                document.getElementById("form-status").style.background = "#fff3e0";
             }
         } catch(e) {
-            alert("連線錯誤: " + e);
+            alert("連線錯誤 (請確認後台已建立新版本): " + e);
+            document.getElementById("loading").style.display = "none";
         }
     }
 
