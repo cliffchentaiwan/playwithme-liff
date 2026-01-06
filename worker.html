@@ -5,53 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>極簡測試</title>
 </head>
-<body style="padding: 20px; font-family: sans-serif;">
+<body style="padding: 20px; font-family: sans-serif; background-color: #ffe6e6;">
 
-    <h1>🚑 極簡急救模式</h1>
-    <p>如果看到這個畫面，代表 worker.html 檔案本身是好的。</p>
+    <h1>🚑 極簡急救模式 (粉紅版)</h1>
+    <p>看到這個粉紅色背景，代表 GitHub 更新成功了！</p>
     <hr>
     
     <h3>狀態：</h3>
     <div id="status" style="font-weight: bold; color: blue;">準備開始...</div>
     
-    <h3>錯誤訊息 (如果有的話)：</h3>
-    <div id="debug" style="color: red; margin-top: 10px; border: 1px solid red; padding: 10px; min-height: 50px;"></div>
+    <h3>錯誤偵測：</h3>
+    <div id="debug" style="color: red; margin-top: 10px; border: 1px solid red; padding: 10px; background: white; min-height: 50px;"></div>
 
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <script>
-        // 1. 把錯誤印在畫面上，不要藏在 console 裡
+        // 錯誤監聽
         window.onerror = function(msg, url, line) {
-            document.getElementById('debug').innerHTML += "❌ 系統錯誤: " + msg + "<br>行數: " + line + "<br>";
+            document.getElementById('debug').innerHTML += "❌ 錯誤: " + msg + "<br>行數: " + line + "<br>";
         };
 
         const LIFF_ID = "2008808827-DzeTt84n";
 
         async function start() {
             try {
-                document.getElementById('status').innerText = "1. 正在初始化 LIFF...";
-                
+                document.getElementById('status').innerText = "1. 初始化 LIFF...";
                 await liff.init({ liffId: LIFF_ID });
                 
-                document.getElementById('status').innerText = "2. LIFF 初始化成功！檢查登入狀態...";
+                document.getElementById('status').innerText = "2. LIFF 初始化成功！";
                 
                 if (!liff.isLoggedIn()) {
-                    document.getElementById('status').innerText = "3. 未登入，正在跳轉 LINE 登入...";
+                    document.getElementById('status').innerText = "3. 未登入，請登入";
                     liff.login();
                 } else {
                     const profile = await liff.getProfile();
-                    document.getElementById('status').innerHTML = "✅ 成功抓到資料！<br>你好，" + profile.displayName;
-                    
-                    // 顯示大頭貼確認真的抓到了
-                    document.body.innerHTML += `<br><br><img src="${profile.pictureUrl}" style="width:100px; border-radius:50%; border: 3px solid green;">`;
+                    document.getElementById('status').innerHTML = "✅ 成功！你好，" + profile.displayName;
+                    document.body.innerHTML += `<br><img src="${profile.pictureUrl}" style="width:100px; border-radius:50%; border: 3px solid green;">`;
                 }
             } catch (err) {
                 document.getElementById('debug').innerText = "執行失敗: " + err;
             }
         }
 
-        // 啟動程式
-        start();
+        // 執行
+        if (typeof liff === 'undefined') {
+             document.getElementById('debug').innerText = "LIFF SDK 沒載入，請檢查網路";
+        } else {
+             start();
+        }
     </script>
 </body>
 </html>
