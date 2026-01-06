@@ -6,70 +6,83 @@
     <title>夥伴後台</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f5f5f5; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; }
-        .avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; }
-        input, textarea, select { width: 100%; padding: 10px; margin: 5px 0 15px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        label { display: block; text-align: left; font-weight: bold; margin-top: 10px; }
-        .btn-save { width: 100%; padding: 15px; background: #06c755; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; }
-        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; justify-content:center; align-items:center; z-index:999; }
+        body { font-family: -apple-system, sans-serif; background: #f5f5f5; padding: 20px; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 3px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input, textarea, select { width: 100%; padding: 12px; margin: 5px 0 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: #fafafa; }
+        label { display: block; text-align: left; font-weight: bold; margin-top: 10px; color: #555; }
+        .btn-save { width: 100%; padding: 15px; background: #06c755; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; margin-top: 10px; }
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; justify-content:center; align-items:center; z-index:999; flex-direction: column; }
+        
+        .time-item { background: #e3f2fd; color: #1565c0; padding: 8px 12px; border-radius: 6px; margin: 5px 0; text-align: left; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div id="loading">讀取中...</div>
+<div id="loading">
+    <div style="font-size: 40px;">🚀</div>
+    <div style="margin-top: 10px; color: #666;">讀取中...</div>
+</div>
 
 <div class="card">
-    <img id="my-avatar" class="avatar" src="">
-    <h2 id="my-name">...</h2>
+    <img id="my-avatar" class="avatar" src="https://via.placeholder.com/80">
+    <h2 id="my-name" style="margin: 0;">...</h2>
+    <div style="font-size: 13px; color: #888; margin-top: 5px;">陪玩夥伴設定</div>
 </div>
 
 <div class="card" style="text-align:left;">
-    <label>時薪</label><input type="number" id="inp-rate">
-    <label>標籤</label><input type="text" id="inp-tags">
-    <label>介紹</label><textarea id="inp-intro"></textarea>
-    <label>銀行</label><input type="text" id="inp-bank">
-    <label>排班 (選完按+)</label>
-    <div style="display:flex;gap:5px;">
+    <label>時薪 (TWD)</label><input type="number" id="inp-rate">
+    <label>專長標籤</label><input type="text" id="inp-tags" placeholder="例如: 畫畫, 鋼琴">
+    <label>自我介紹</label><textarea id="inp-intro" rows="3"></textarea>
+    <label>銀行帳號</label><input type="text" id="inp-bank">
+    
+    <label>排班設定</label>
+    <div style="display:flex;gap:10px;">
         <select id="sel-day"><option>週一</option><option>週二</option><option>週三</option><option>週四</option><option>週五</option><option>週六</option><option>週日</option></select>
         <select id="sel-time"><option>09:00</option><option>13:00</option><option>19:00</option></select>
-        <button onclick="addTime()">+</button>
+        <button onclick="addTime()" style="width: 50px; background: #1976d2; color: white; border: none; border-radius: 8px; font-size: 20px;">+</button>
     </div>
-    <div id="schedule-box" style="margin-top:10px; color:#06c755;"></div>
+    <div id="schedule-box" style="margin-top:10px;"></div>
 </div>
 
-<button class="btn-save" onclick="saveData()">儲存資料</button>
+<button class="btn-save" onclick="saveData()">儲存並上線</button>
 
 <script>
     const LIFF_ID = "2008808827-DzeTt84n";
-    // ⚠️ 請確認這是剛剛 GAS 部署出來的網址
+    // ⚠️ 務必確認這是您最新部署的網址
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
     
     let userProfile, mySchedule = [];
 
     window.onload = async function() {
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) { liff.login(); return; }
-        userProfile = await liff.getProfile();
-        
-        document.getElementById("my-avatar").src = userProfile.pictureUrl;
-        document.getElementById("my-name").innerText = userProfile.displayName;
-        
-        // 登入並讀取資料
-        let res = await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "login", userId: userProfile.userId })
-        });
-        let json = await res.json();
-        document.getElementById("loading").style.display = "none";
+        try {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            userProfile = await liff.getProfile();
+            
+            document.getElementById("my-avatar").src = userProfile.pictureUrl;
+            document.getElementById("my-name").innerText = userProfile.displayName;
+            
+            // 登入並讀取資料
+            let res = await fetch(SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" }, // 關鍵修正
+                body: JSON.stringify({ action: "login", userId: userProfile.userId })
+            });
+            let json = await res.json();
+            document.getElementById("loading").style.display = "none";
 
-        if (json.isRegistered) {
-            let d = json.data;
-            document.getElementById("inp-rate").value = d.rate;
-            document.getElementById("inp-tags").value = d.tags;
-            document.getElementById("inp-intro").value = d.intro;
-            document.getElementById("inp-bank").value = d.bank;
-            try { mySchedule = JSON.parse(d.schedule); renderSchedule(); } catch(e){}
+            if (json.isRegistered) {
+                let d = json.data;
+                document.getElementById("inp-rate").value = d.rate;
+                document.getElementById("inp-tags").value = d.tags;
+                document.getElementById("inp-intro").value = d.intro;
+                document.getElementById("inp-bank").value = d.bank;
+                try { mySchedule = JSON.parse(d.schedule); renderSchedule(); } catch(e){}
+            }
+        } catch(e) {
+            alert("初始化失敗: " + e);
+            document.getElementById("loading").style.display = "none";
         }
     };
 
@@ -78,30 +91,44 @@
         if(!mySchedule.includes(t)) { mySchedule.push(t); renderSchedule(); }
     }
 
+    function removeTime(idx) {
+        mySchedule.splice(idx, 1);
+        renderSchedule();
+    }
+
     function renderSchedule() {
-        document.getElementById("schedule-box").innerText = mySchedule.join(", ");
+        let box = document.getElementById("schedule-box");
+        box.innerHTML = "";
+        mySchedule.forEach((s, i) => {
+            box.innerHTML += `<div class="time-item">${s} <span onclick="removeTime(${i})" style="float:right;color:red;cursor:pointer;">×</span></div>`;
+        });
     }
 
     async function saveData() {
         let btn = document.querySelector(".btn-save");
         btn.innerText = "儲存中..."; btn.disabled = true;
         
-        await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({
-                action: "updateProfile",
-                userId: userProfile.userId,
-                name: userProfile.displayName,
-                photo: userProfile.pictureUrl,
-                rate: document.getElementById("inp-rate").value,
-                tags: document.getElementById("inp-tags").value,
-                intro: document.getElementById("inp-intro").value,
-                bank: document.getElementById("inp-bank").value,
-                schedule: JSON.stringify(mySchedule)
-            })
-        });
-        alert("成功！");
-        btn.innerText = "儲存資料"; btn.disabled = false;
+        try {
+            await fetch(SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" }, // 關鍵修正
+                body: JSON.stringify({
+                    action: "updateProfile",
+                    userId: userProfile.userId,
+                    name: userProfile.displayName,
+                    photo: userProfile.pictureUrl,
+                    rate: document.getElementById("inp-rate").value,
+                    tags: document.getElementById("inp-tags").value,
+                    intro: document.getElementById("inp-intro").value,
+                    bank: document.getElementById("inp-bank").value,
+                    schedule: JSON.stringify(mySchedule)
+                })
+            });
+            alert("✅ 儲存成功！");
+        } catch(e) {
+            alert("儲存失敗: " + e);
+        }
+        btn.innerText = "儲存並上線"; btn.disabled = false;
     }
 </script>
 </body>
