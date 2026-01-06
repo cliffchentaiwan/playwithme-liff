@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>孩友友 - 尋找陪玩夥伴</title>
+    <title>孩友友 (V8.0)</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background-color: #f8f9fa; margin: 0; padding-bottom: 80px; color: #333; }
@@ -11,7 +11,6 @@
         .filter-scroll { display: flex; overflow-x: auto; gap: 8px; padding: 10px 15px; scrollbar-width: none; }
         .filter-tag { background: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; color: #666; box-shadow: 0 1px 3px rgba(0,0,0,0.1); white-space: nowrap; cursor: pointer; border: 1px solid transparent; }
         .filter-tag.active { background: #06C755; color: white; border-color: #06c755; }
-        .worker-list { padding: 15px; }
         .worker-card { background: white; border-radius: 16px; padding: 15px; display: flex; align-items: center; gap: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; }
         .worker-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); background: #eee; }
         .worker-info { flex: 1; overflow: hidden; }
@@ -19,21 +18,30 @@
         .worker-tags { font-size: 13px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .worker-price { font-size: 16px; font-weight: bold; color: #06C755; margin-top: 5px; }
         .btn-book { background-color: #06C755; color: white; border: none; padding: 8px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: end; z-index: 2000; backdrop-filter: blur(2px); }
         .modal.show { display: flex; }
         .modal-content { background: white; width: 100%; max-width: 500px; padding: 25px; border-radius: 24px 24px 0 0; animation: slideUp 0.3s; max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
         label { display: block; font-size: 14px; font-weight: bold; color: #555; margin: 15px 0 8px 0; }
         input, textarea, select { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 16px; background: #f9f9f9; }
         .btn-submit { width: 100%; padding: 15px; background: #06c755; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; margin-top: 20px; cursor: pointer; }
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 3000; flex-direction: column; }
+        
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 3000; flex-direction: column; text-align: center; }
+        #error-msg { color: red; margin-top: 20px; font-size: 14px; display: none; padding: 0 20px; }
+        .btn-retry { background: #333; color: white; padding: 10px 20px; border-radius: 5px; border: none; margin-top: 15px; cursor: pointer; display: none; }
     </style>
 </head>
 <body>
+
 <div id="loading">
     <div style="font-size:40px;">🔍</div>
-    <div style="color:#666; margin-top:10px;">系統連線中...</div>
+    <div style="color:#666; margin-top:10px; font-weight:bold;">系統連線中 (V8.0)...</div>
+    <div id="error-msg"></div>
+    <button id="btn-retry" class="btn-retry" onclick="location.reload()">🔄 重新載入</button>
 </div>
+
 <div class="app-header">🔍 找陪玩夥伴</div>
 <div class="filter-scroll">
     <div class="filter-tag active" onclick="filterWorkers('all', this)">全部</div>
@@ -42,7 +50,9 @@
     <div class="filter-tag" onclick="filterWorkers('音樂', this)">🎵 音樂</div>
     <div class="filter-tag" onclick="filterWorkers('陪玩', this)">🧸 陪玩</div>
 </div>
-<div id="worker-list" class="worker-list"></div>
+
+<div id="worker-list" style="padding:15px;"></div>
+
 <div id="booking-modal" class="modal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -64,30 +74,63 @@
         <label>孩童資訊</label>
         <input type="text" id="inp-child" placeholder="例如：5歲 小男生">
         <label>備註需求</label>
-        <textarea id="inp-note" rows="2" placeholder="有什麼特別需要注意的嗎？"></textarea>
+        <textarea id="inp-note" rows="2" placeholder="備註..."></textarea>
         <button class="btn-submit" onclick="initPayment()">前往 LINE Pay 付款</button>
     </div>
 </div>
+
 <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
     const LIFF_ID = "2008808827-DzeTt84n"; 
     let userProfile = null, allWorkers = [], selectedWorker = null;
+
+    // 超時自救機制
+    setTimeout(() => {
+        const loading = document.getElementById("loading");
+        if(loading.style.display !== "none") {
+            document.getElementById("error-msg").innerText = "⚠️ 連線似乎有點慢，請檢查網路";
+            document.getElementById("error-msg").style.display = "block";
+            document.getElementById("btn-retry").style.display = "inline-block";
+        }
+    }, 5000); // 5秒後顯示重試按鈕
+
     window.onload = async function() {
         try {
             await liff.init({ liffId: LIFF_ID });
             if (!liff.isLoggedIn()) { liff.login(); return; }
             userProfile = await liff.getProfile();
             loadWorkers();
-        } catch (err) { alert("載入失敗: " + err); document.getElementById("loading").style.display = "none"; }
+        } catch (err) {
+            showError("LIFF 初始化失敗: " + err);
+        }
     };
+
     async function loadWorkers() {
         try {
-            const res = await fetch(SCRIPT_URL + "?action=getWorkers");
-            allWorkers = await res.json();
-            renderWorkers(allWorkers);
-            document.getElementById("loading").style.display = "none";
-        } catch(e) { console.error(e); alert("無法讀取資料，請確認後台是否正常"); document.getElementById("loading").style.display = "none"; }
+            // ✅ V8.0 關鍵修正：使用 text/plain 繞過 iOS 阻擋
+            const res = await fetch(SCRIPT_URL + "?action=getWorkers", {
+                method: "GET", // 改用 GET 試試，通常比較快
+                headers: { "Content-Type": "text/plain" }
+            });
+            const text = await res.text(); // 先讀成文字，避免 JSON 解析錯誤
+            try {
+                allWorkers = JSON.parse(text);
+                renderWorkers(allWorkers);
+                document.getElementById("loading").style.display = "none";
+            } catch(e) {
+                showError("資料格式錯誤: " + text.substring(0, 50));
+            }
+        } catch(e) {
+            showError("連線失敗 (Load Failed): " + e);
+        }
     }
+
+    function showError(msg) {
+        document.getElementById("error-msg").innerText = "❌ " + msg;
+        document.getElementById("error-msg").style.display = "block";
+        document.getElementById("btn-retry").style.display = "inline-block";
+    }
+
     function renderWorkers(workers) {
         const list = document.getElementById("worker-list");
         list.innerHTML = "";
@@ -100,12 +143,14 @@
             list.appendChild(div);
         });
     }
+
     function filterWorkers(tag, btn) {
         document.querySelectorAll(".filter-tag").forEach(el => el.classList.remove("active"));
         btn.classList.add("active");
         if(tag === 'all') renderWorkers(allWorkers);
         else renderWorkers(allWorkers.filter(w => (w.tags || "").includes(tag)));
     }
+
     function openBooking(worker) {
         selectedWorker = worker;
         document.getElementById("modal-worker-name").innerText = "預約 " + worker.name;
@@ -118,18 +163,27 @@
         else schedule.forEach(slot => sel.innerHTML += `<option value="${slot}">${slot}</option>`);
         updatePrice();
     }
+
     function updatePrice() {
         if(!selectedWorker) return;
         const h = parseFloat(document.getElementById("inp-duration").value);
         document.getElementById("total-price").innerText = "$" + (selectedWorker.rate * h);
     }
+
     function closeModal() { document.getElementById("booking-modal").classList.remove("show"); }
+
     async function initPayment() {
         const btn = document.querySelector(".btn-submit");
         btn.innerText = "處理中..."; btn.disabled = true;
         const payload = { action: "initPayment", userName: userProfile.displayName, companion: selectedWorker.name, price: document.getElementById("total-price").innerText.replace("$", ""), bookingTime: document.getElementById("inp-time").value + " (" + document.getElementById("inp-duration").value + "hr)", childInfo: document.getElementById("inp-child").value, note: document.getElementById("inp-note").value, productImageUrl: selectedWorker.photo };
+        
         try {
-            const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
+            // ✅ V8.0 關鍵修正
+            const res = await fetch(SCRIPT_URL, { 
+                method: "POST", 
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify(payload) 
+            });
             const result = await res.json();
             if(result.success) window.location.href = result.paymentUrl;
             else { alert("錯誤：" + result.message); btn.innerText="前往 LINE Pay 付款"; btn.disabled=false; }
