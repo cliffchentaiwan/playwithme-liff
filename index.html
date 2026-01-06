@@ -6,73 +6,92 @@
     <title>孩友友 (家長端)</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f5f5f5; margin: 0; padding-bottom: 80px; }
-        .app-header { background: white; padding: 15px; font-weight: bold; text-align: center; position: sticky; top: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body { font-family: -apple-system, sans-serif; background: #f5f5f5; margin: 0; padding-bottom: 80px; }
+        .app-header { background: white; padding: 15px; font-weight: bold; text-align: center; position: sticky; top: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-size: 18px; }
         .worker-card { background: white; padding: 15px; margin: 15px; border-radius: 15px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .worker-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 15px; }
+        .worker-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 15px; background: #eee; }
         .worker-info { flex: 1; }
-        .btn-book { background: #06c755; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; }
+        .btn-book { background: #06c755; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; }
         
         /* 彈窗 */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: flex-end; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: flex-end; z-index: 1000; }
         .modal.show { display: flex; }
-        .modal-content { background: white; width: 100%; padding: 20px; border-radius: 20px 20px 0 0; box-sizing: border-box; }
-        input, select, textarea { width: 100%; padding: 10px; margin: 5px 0 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        .modal-content { background: white; width: 100%; padding: 25px; border-radius: 20px 20px 0 0; box-sizing: border-box; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 5px 0 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: #fafafa; }
+        label { font-weight: bold; color: #555; display: block; margin-top: 5px; }
         .btn-pay { width: 100%; padding: 15px; background: #06c755; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; margin-top: 10px; }
-        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; justify-content:center; align-items:center; z-index:999; }
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; justify-content:center; align-items:center; z-index:999; flex-direction: column; }
     </style>
 </head>
 <body>
 
-<div id="loading">讀取中...</div>
+<div id="loading">
+    <div style="font-size: 40px;">🔍</div>
+    <div style="margin-top: 10px; color: #666;">載入中...</div>
+</div>
+
 <div class="app-header">🔍 找陪玩夥伴</div>
 <div id="worker-list"></div>
 
 <div id="booking-modal" class="modal">
     <div class="modal-content">
-        <h3 id="modal-name">預約</h3>
+        <h3 id="modal-name" style="margin-top:0;">預約</h3>
         <label>時段</label><select id="inp-time"></select>
         <label>時數</label><select id="inp-hour" onchange="calcPrice()"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
-        <label>總金額</label><div id="total-price" style="color:#06c755; font-weight:bold; font-size:18px; margin-bottom:10px;">$0</div>
+        <label>總金額</label><div id="total-price" style="color:#06c755; font-weight:bold; font-size:20px; margin-bottom:15px;">$0</div>
         <button class="btn-pay" onclick="goPay()">LINE Pay 付款</button>
-        <button onclick="document.getElementById('booking-modal').classList.remove('show')" style="width:100%; padding:10px; background:none; border:none; margin-top:5px; color:#666;">取消</button>
+        <button onclick="document.getElementById('booking-modal').classList.remove('show')" style="width:100%; padding:15px; background:none; border:none; margin-top:5px; color:#999; font-size: 16px;">取消</button>
     </div>
 </div>
 
 <script>
     const LIFF_ID = "2008808827-DzeTt84n";
-    // ⚠️ 請確認這是剛剛 GAS 部署出來的網址
+    // ⚠️ 務必確認這是您最新部署的網址
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLO3480Hv5WZs_j7zjUZUvaflboGRyo0_TW94XpQnJo6Uhez7NA_xgSiGxrvDP4LJ/exec";
     
     let userProfile, selectedWorker;
 
     window.onload = async function() {
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) { liff.login(); return; }
-        userProfile = await liff.getProfile();
-        loadWorkers();
+        try {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            userProfile = await liff.getProfile();
+            loadWorkers();
+        } catch(e) {
+            alert("初始化失敗: " + e);
+        }
     };
 
     async function loadWorkers() {
-        // 這是最原始的 GET 請求，通常最穩定
-        let res = await fetch(SCRIPT_URL + "?action=getWorkers");
-        let workers = await res.json();
-        
-        let html = "";
-        workers.forEach(w => {
-            html += `
-                <div class="worker-card">
-                    <img class="worker-img" src="${w.photo || 'https://via.placeholder.com/80'}">
-                    <div class="worker-info">
-                        <div style="font-weight:bold;">${w.name}</div>
-                        <div style="font-size:12px; color:#666;">${w.tags}</div>
-                        <div style="color:#06c755; font-weight:bold;">$${w.rate}/hr</div>
-                    </div>
-                    <button class="btn-book" onclick='openModal(${JSON.stringify(w)})'>預約</button>
-                </div>`;
-        });
-        document.getElementById("worker-list").innerHTML = html;
-        document.getElementById("loading").style.display = "none";
+        try {
+            // 使用 text/plain 避免 iOS CORS 錯誤
+            let res = await fetch(SCRIPT_URL + "?action=getWorkers", {
+                method: "GET",
+                headers: { "Content-Type": "text/plain" }
+            });
+            let workers = await res.json();
+            
+            let html = "";
+            if (workers.length === 0) html = "<p style='text-align:center; padding:20px; color:#999;'>目前沒有上線的夥伴</p>";
+            
+            workers.forEach(w => {
+                html += `
+                    <div class="worker-card">
+                        <img class="worker-img" src="${w.photo || 'https://via.placeholder.com/80'}">
+                        <div class="worker-info">
+                            <div style="font-weight:bold; font-size:16px;">${w.name}</div>
+                            <div style="font-size:13px; color:#666; margin: 4px 0;">${w.tags || '無標籤'}</div>
+                            <div style="color:#06c755; font-weight:bold;">$${w.rate}/hr</div>
+                        </div>
+                        <button class="btn-book" onclick='openModal(${JSON.stringify(w)})'>預約</button>
+                    </div>`;
+            });
+            document.getElementById("worker-list").innerHTML = html;
+            document.getElementById("loading").style.display = "none";
+        } catch(e) {
+            alert("讀取失敗，請重新整理");
+            document.getElementById("loading").style.display = "none";
+        }
     }
 
     function openModal(w) {
@@ -81,7 +100,11 @@
         document.getElementById("booking-modal").classList.add("show");
         let sel = document.getElementById("inp-time");
         sel.innerHTML = "";
-        try { JSON.parse(w.schedule).forEach(s => sel.innerHTML += `<option>${s}</option>`); } catch(e) { sel.innerHTML = "<option>無時段</option>"; }
+        try { 
+            let sch = JSON.parse(w.schedule);
+            if(sch.length > 0) sch.forEach(s => sel.innerHTML += `<option>${s}</option>`);
+            else sel.innerHTML = "<option>無可預約時段</option>";
+        } catch(e) { sel.innerHTML = "<option>無可預約時段</option>"; }
         calcPrice();
     }
 
@@ -93,17 +116,23 @@
     async function goPay() {
         let btn = document.querySelector(".btn-pay");
         btn.innerText = "處理中..."; btn.disabled = true;
-        let res = await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({
-                action: "initPayment",
-                price: document.getElementById("total-price").innerText.replace("$",""),
-                productImageUrl: selectedWorker.photo
-            })
-        });
-        let json = await res.json();
-        if(json.success) window.location.href = json.paymentUrl;
-        else { alert("失敗"); btn.disabled = false; }
+        try {
+            let res = await fetch(SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" }, // 關鍵修正
+                body: JSON.stringify({
+                    action: "initPayment",
+                    price: document.getElementById("total-price").innerText.replace("$",""),
+                    productImageUrl: selectedWorker.photo
+                })
+            });
+            let json = await res.json();
+            if(json.success) window.location.href = json.paymentUrl;
+            else { alert("建立訂單失敗"); btn.disabled = false; btn.innerText = "LINE Pay 付款"; }
+        } catch(e) {
+            alert("連線錯誤: " + e);
+            btn.disabled = false; btn.innerText = "LINE Pay 付款";
+        }
     }
 </script>
 </body>
